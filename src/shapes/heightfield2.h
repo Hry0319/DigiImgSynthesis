@@ -53,8 +53,15 @@ public:
 private:
 	void InitNormals();
     // Heightfield2 Private Data
+    float min_z,max_z;
+    int width,height,depth;
     float *z;
     int nx, ny;
+    Normal  *normal;
+
+	  int voxel2posX;
+	  int voxel2posY;
+  	int voxel2posZ;
 };
 
 
