@@ -62,7 +62,7 @@ Heightfield2::Heightfield2(
 	height = ny;
 	depth  = 1;
 
-	InitNormals();
+	InitVertexNormals();
 
 }
 
@@ -75,7 +75,7 @@ Heightfield2::~Heightfield2() {
 //
 // Heightfield2::InitNormals()
 //
-void Heightfield2::InitNormals() {
+void Heightfield2::InitVertexNormals() {
 	Point          p[9];
 //	Vector         vector[8];
 
@@ -84,7 +84,7 @@ void Heightfield2::InitNormals() {
 	int voxel2posY = height-1;
   	int voxel2posZ = 1;
 
-	normal = new Normal[nx*ny];
+	vertexNormals = new Normal[nx*ny];
 
 	for ( int j = 0; j < ny; j++)
 	{
@@ -189,7 +189,7 @@ void Heightfield2::InitNormals() {
 
 
 
-			normal[i+j*nx] = Normal( Normalize(	Cross( (p[0]-p[4]) ,(p[1]-p[4]) ) + \
+			vertexNormals[i+j*nx] = Normal( Normalize(	Cross( (p[0]-p[4]) ,(p[1]-p[4]) ) + \
 												Cross( (p[1]-p[4]) ,(p[2]-p[4]) ) + \
 												Cross( (p[2]-p[4]) ,(p[5]-p[4]) ) + \
 												Cross( (p[5]-p[4]) ,(p[8]-p[4]) ) + \
@@ -206,7 +206,7 @@ void Heightfield2::InitNormals() {
 //												Cross( (p[7]-p[4]) ,(p[3]-p[4]) ) + \
 //												Cross( (p[3]-p[4]) ,(p[0]-p[4]) )
 //												))*(-1);
-			printf("%e %e %e  \n" , normal[i+j*nx].x, normal[i+j*nx].y, normal[i+j*nx].z);
+//			printf("%e %e %e  \n" , normal[i+j*nx].x, normal[i+j*nx].y, normal[i+j*nx].z);
 
 		}
 	}

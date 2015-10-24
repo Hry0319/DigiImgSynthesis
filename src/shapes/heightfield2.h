@@ -48,16 +48,16 @@ public:
 //    void Refine(vector<Reference<Shape> > &refined) const;
     BBox ObjectBound() const;
     bool CanIntersect() const;
-	bool Intersect(const Ray &ray, float *tHit, float *rayEpsilon, DifferentialGeometry *dg) const;
-	bool IntersectP(const Ray &ray) const;
+	  bool Intersect(const Ray &ray, float *tHit, float *rayEpsilon, DifferentialGeometry *dg) const;
+	  bool IntersectP(const Ray &ray) const;
 private:
-	void InitNormals();
+	void InitVertexNormals();
     // Heightfield2 Private Data
     float min_z,max_z;
     int width,height,depth;
     float *z;
     int nx, ny;
-    Normal  *normal;
+    Normal  *vertexNormals;
 };
 
 
