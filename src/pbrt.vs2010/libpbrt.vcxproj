@@ -1347,7 +1347,8 @@
       <PreprocessorDefinitions>WIN32;_WIN64;_DEBUG;_CONSOLE;PBRT_PROBES_NONE;PBRT_HAS_OPENEXR;ZLIB_WINAPI;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <PrecompiledHeaderFile>StdAfx.h</PrecompiledHeaderFile>
-      <MinimalRebuild>true</MinimalRebuild>
+      <MinimalRebuild>false</MinimalRebuild>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

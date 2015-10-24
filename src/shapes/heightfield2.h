@@ -58,10 +58,6 @@ private:
     float *z;
     int nx, ny;
     Normal  *normal;
-
-	  int voxel2posX;
-	  int voxel2posY;
-  	int voxel2posZ;
 };
 
 
