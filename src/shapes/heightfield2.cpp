@@ -81,13 +81,13 @@ Heightfield2::~Heightfield2() {
 //
 void Heightfield2::InitNormals() {
 	Point          p[9];
-	Vector         vector[8];
+//	Vector         vector[8];
 
 	normal = new Normal[nx*ny];
 
-	for (unsigned int j = 0; j < ny; j++)
+	for ( int j = 0; j < ny; j++)
 	{
-		for (unsigned int i = 0; i < nx; i++)
+		for ( int i = 0; i < nx; i++)
 		{
 			p[4] = Point(i/(float)voxel2posX, j/(float)voxel2posY, z[i+j*nx]/(float)voxel2posZ);
 
@@ -186,21 +186,22 @@ void Heightfield2::InitNormals() {
 				p[8] = Point( (i+1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+j*nx]/(float)voxel2posZ);
 			}
 
-			for (int index = 0; index < 9; index++)
-			{
-				vector[index] = p[index]-p[4];
-			}
 
-//			normal[i+j*nx] = Normal( Normalize(	Cross(vector[0],vector[1]) + \
-//												Cross(vector[1],vector[2]) + \
-//												Cross(vector[2],vector[3]) + \
-//												Cross(vector[3],vector[4]) + \
-//												Cross(vector[4],vector[5]) + \
-//												Cross(vector[5],vector[6]) + \
-//												Cross(vector[6],vector[7]) + \
-//												Cross(vector[7],vector[0])
-//												))*(-1);
 
+			normal[i+j*nx] = Normal( Normalize(	Cross( (p[0]-p[4]) ,(p[1]-p[4]) ) + \
+												Cross( (p[1]-p[4]) ,(p[2]-p[4]) ) + \
+												Cross( (p[2]-p[4]) ,(p[5]-p[4]) ) + \
+												Cross( (p[5]-p[4]) ,(p[8]-p[4]) ) + \
+												Cross( (p[8]-p[4]) ,(p[7]-p[4]) ) + \
+												Cross( (p[7]-p[4]) ,(p[6]-p[4]) ) + \
+												Cross( (p[6]-p[4]) ,(p[3]-p[4]) ) + \
+												Cross( (p[3]-p[4]) ,(p[0]-p[4]) )
+												))*(-1);
+
+//			vector[0] = Point(1,1,1)-Point(0,0,0);
+//			vector[1] = Point(1,1,1)-Point(1,1,1);
+//			normal[i+j*nx] = Normal( Normalize(Cross(vector[0],vector[1])) )*-1;
+			//Cross(vector[0],vector[1]);
 
 		}
 	}
