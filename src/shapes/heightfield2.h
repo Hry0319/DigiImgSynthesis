@@ -69,17 +69,19 @@ private:
 
     bool IntersectHelper(const Ray &ray, const Point *pts, int i, int j, Intersection *in) const;
     int pos2Voxel(const Point &P, int axis) const {
-		if (axis == 2) return 0;
+        if (axis == 2) return 0;
+        //Point[0] is Point.x
+        //Point[1] is Point.y
+        //Point[2] is Point.z
         int v = Float2Int(P[axis] * nVoxels[axis]);
         return Clamp(v, 0, nVoxels[axis]);
     }
     float voxel2Pos(int p, int axis) const {
-        return p / (float)(nVoxels[axis]);
+        return (float)p / (float)(nVoxels[axis]);
     }
-	  float getZ(int x, int y) const {
-		    //return z[ x*ny + y ];
-		    return z[ y*nx + x];
-	  }
+    float getZ(int x, int y) const {
+        return z[x + nx*y];
+    }
 
 };
 
