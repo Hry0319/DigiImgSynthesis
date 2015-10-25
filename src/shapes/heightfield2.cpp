@@ -226,10 +226,6 @@ bool Heightfield2::Intersect(const Ray &ray, float *tHit, float *rayEpsilon, Dif
         return false;
 	}
 
-	bool isIntersect = bounds.IntersectP(rayW2O, &rayT);
-	if(isIntersect)
-		printf("intersectP  \n");
-
 
     Point gridIntersect = rayW2O(rayT);
 	//
