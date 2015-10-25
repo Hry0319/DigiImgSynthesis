@@ -63,7 +63,7 @@ Heightfield2::Heightfield2(
 	depth  = 1;
 
 	InitVertexNormals();
-
+	InitTriangles();
 }
 
 
@@ -72,6 +72,12 @@ Heightfield2::~Heightfield2() {
 }
 
 
+//
+// Heightfield2::InitTriangles()
+//
+void Heightfield2::InitTriangles() {
+
+}
 //
 // Heightfield2::InitNormals()
 //
@@ -85,12 +91,16 @@ void Heightfield2::InitVertexNormals() {
   	int voxel2posZ = 1;
 
 	vertexNormals = new Normal[nx*ny];
+	points        = new Point[nx*ny];
 
 	for ( int j = 0; j < ny; j++)
 	{
 		for ( int i = 0; i < nx; i++)
 		{
 			p[4] = Point(i/(float)voxel2posX, j/(float)voxel2posY, z[i+j*nx]/(float)voxel2posZ);
+
+			points[i+j*nx] = p[4];
+			//printf("/// %f %f %f  \n", points[i+j*nx].x, points[i+j*nx].y, points[i+j*nx].z);
 
 			//
 			// left top
@@ -186,9 +196,6 @@ void Heightfield2::InitVertexNormals() {
 				p[7] = Point( (i  )/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j+1)*nx]/(float)voxel2posZ);
 				p[8] = Point( (i+1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i+1)+(j+1)*nx]/(float)voxel2posZ);
 			}
-
-
-
 			vertexNormals[i+j*nx] = Normal( Normalize(	Cross( (p[0]-p[4]) ,(p[1]-p[4]) ) + \
 												Cross( (p[1]-p[4]) ,(p[2]-p[4]) ) + \
 												Cross( (p[2]-p[4]) ,(p[5]-p[4]) ) + \
@@ -199,26 +206,36 @@ void Heightfield2::InitVertexNormals() {
 												Cross( (p[3]-p[4]) ,(p[0]-p[4]) )
 												))*(-1);
 
-//			normal[i+j*nx] = Normal( Normalize(	Cross( (p[0]-p[4]) ,(p[1]-p[4]) ) + \
-//												Cross( (p[1]-p[4]) ,(p[5]-p[4]) ) + \
-//												Cross( (p[5]-p[4]) ,(p[8]-p[4]) ) + \
-//												Cross( (p[8]-p[4]) ,(p[7]-p[4]) ) + \
-//												Cross( (p[7]-p[4]) ,(p[3]-p[4]) ) + \
-//												Cross( (p[3]-p[4]) ,(p[0]-p[4]) )
-//												))*(-1);
-//			printf("%e %e %e  \n" , normal[i+j*nx].x, normal[i+j*nx].y, normal[i+j*nx].z);
-
 		}
 	}
 }
 
 bool Heightfield2::Intersect(const Ray &ray, float *tHit, float *rayEpsilon, DifferentialGeometry *dg) const{
+	Ray rayW2O;
+	(*WorldToObject)(ray, &rayW2O);
+
 	float rayT;
 	BBox bounds = ObjectBound();
-    if (bounds.Inside(ray(ray.mint)))
+
+    if (bounds.Inside(rayW2O(rayW2O.mint)))
+    {
+        rayT = rayW2O.mint;
+    }
+    else if (!bounds.IntersectP(rayW2O, &rayT))
+    {
         return false;
-    else if (!bounds.IntersectP(ray, &rayT))
-        return false;
+	}
+
+	bool isIntersect = bounds.IntersectP(rayW2O, &rayT);
+	if(isIntersect)
+		printf("intersectP  \n");
+
+
+    Point gridIntersect = rayW2O(rayT);
+	//
+	// ray position
+	//
+
 
 	return false;
 }
@@ -228,12 +245,12 @@ bool Heightfield2::IntersectP(const Ray &ray) const{
 }
 
 BBox Heightfield2::ObjectBound() const {
-    float minz = z[0], maxz = z[0];
-    for (int i = 1; i < nx*ny; ++i) {
-        if (z[i] < minz) minz = z[i];
-        if (z[i] > maxz) maxz = z[i];
-    }
-    return BBox(Point(0,0,minz), Point(1,1,maxz));
+//    BBox objectBounds;
+//    for (int i = 0; i < nx*ny; i++)
+//        objectBounds = Union(objectBounds, (*WorldToObject)(points[i]));
+
+//	return objectBounds;
+	return BBox(Point(0,0,min_z), Point(1,1,max_z));
 }
 
 

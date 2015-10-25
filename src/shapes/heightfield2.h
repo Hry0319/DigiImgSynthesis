@@ -45,19 +45,23 @@ public:
     // Heightfield2 Public Methods
     Heightfield2(const Transform *o2, const Transform *w2o, bool ro, int nu, int nv, const float *zs);
     ~Heightfield2();
-//    void Refine(vector<Reference<Shape> > &refined) const;
+
     BBox ObjectBound() const;
     bool CanIntersect() const;
 	  bool Intersect(const Ray &ray, float *tHit, float *rayEpsilon, DifferentialGeometry *dg) const;
 	  bool IntersectP(const Ray &ray) const;
 private:
-	void InitVertexNormals();
+	  void InitVertexNormals();
+	  void InitTriangles();
+
     // Heightfield2 Private Data
-    float min_z,max_z;
-    int width,height,depth;
-    float *z;
-    int nx, ny;
+    float   min_z,max_z;
+    int     width,height,depth;
+    float   *z;
+    int     nx, ny;
     Normal  *vertexNormals;
+    Point   *points;
+
 };
 
 
