@@ -38,6 +38,7 @@
 
 // shapes/heightfield2.h*
 #include "shape.h"
+//#include "accelerators/grid.h"
 
 // heightfield2 Declarations
 class Heightfield2 : public Shape {
@@ -49,7 +50,9 @@ public:
     BBox ObjectBound() const;
     bool CanIntersect() const;
 	  bool Intersect(const Ray &ray, float *tHit, float *rayEpsilon, DifferentialGeometry *dg) const;
+	  bool IntersectP(const Ray &ray, float *hit0, float *hit1) const;
 	  bool IntersectP(const Ray &ray) const;
+  	void Heightfield2::GetShadingGeometry(const Transform &obj2world, const DifferentialGeometry &dg, DifferentialGeometry *dgShading) const;
 private:
 	  void InitVertexNormals();
 	  void InitTriangles();
@@ -61,6 +64,22 @@ private:
     int     nx, ny;
     Normal  *vertexNormals;
     Point   *points;
+    int     nVoxels[3]; // stores [nx-1,ny-1,1], number of voxels in each dimension
+    BBox    bounds;
+
+    bool IntersectHelper(const Ray &ray, const Point *pts, int i, int j, Intersection *in) const;
+    int pos2Voxel(const Point &P, int axis) const {
+		if (axis == 2) return 0;
+        int v = Float2Int(P[axis] * nVoxels[axis]);
+        return Clamp(v, 0, nVoxels[axis]);
+    }
+    float voxel2Pos(int p, int axis) const {
+        return p / (float)(nVoxels[axis]);
+    }
+	  float getZ(int x, int y) const {
+		    //return z[ x*ny + y ];
+		    return z[ y*nx + x];
+	  }
 
 };
 

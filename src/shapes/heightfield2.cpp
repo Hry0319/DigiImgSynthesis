@@ -38,6 +38,8 @@
 #include "error.h"
 #include <stdio.h>
 
+float tHit1,tHit2;
+
 // Heightfield2 Method Definitions
 Heightfield2::Heightfield2(
 				const Transform *o2w,
@@ -61,6 +63,14 @@ Heightfield2::Heightfield2(
 	width  = nx;
 	height = ny;
 	depth  = 1;
+
+
+    nVoxels[0] = nx - 1;
+    nVoxels[1] = ny - 1;
+	nVoxels[2] = 1;
+//	for (int axis = 0; axis < 3; ++axis) {
+//        nVoxels[axis] = Clamp(nVoxels[axis], 1, 64);
+//    }
 
 	InitVertexNormals();
 	InitTriangles();
@@ -229,16 +239,166 @@ bool Heightfield2::Intersect(const Ray &ray, float *tHit, float *rayEpsilon, Dif
 
     Point gridIntersect = rayW2O(rayT);
 	//
-	// ray position
+	// ray position ??
 	//
 
+	// Set up 3D DDA for ray
+    float NextCrossingT[3], DeltaT[3];
+    int Step[3], Out[3], Pos[3];
+    for (int axis = 0; axis < 3; ++axis) {
+        // Compute current voxel for axis
+        Pos[axis] = pos2Voxel(gridIntersect, axis);
+        if (rayW2O.d[axis] >= 0) {
+            // Handle ray with positive direction for voxel stepping
+            NextCrossingT[axis] = rayT +
+                (voxel2Pos(Pos[axis]+1, axis) - gridIntersect[axis]) / rayW2O.d[axis];
+//            DeltaT[axis] = widthV[axis] / ray.d[axis];
+            DeltaT[axis] = 1.f / (nVoxels[axis] * rayW2O.d[axis]);
+            Step[axis] = 1;
+            Out[axis] = nVoxels[axis];
+        }
+        else {
+            // Handle ray with negative direction for voxel stepping
+            NextCrossingT[axis] = rayT +
+                (voxel2Pos(Pos[axis], axis) - gridIntersect[axis]) / rayW2O.d[axis];
+//            DeltaT[axis] = -widthV[axis] / ray.d[axis];
+            DeltaT[axis] = -1.f / (nVoxels[axis] * rayW2O.d[axis]);
+            Step[axis] = -1;
+            Out[axis] = -1;
+        }
+    }
 
+	// Walk grid for shadow ray
+    bool hitSomething = false;
+	Intersection isect;
+    for (;;) {
+		int i = Pos[0], j = Pos[1];
+		Point TL(voxel2Pos(i,0),   voxel2Pos(j,1),   getZ(i,   j));
+		Point TR(voxel2Pos(i+1,0), voxel2Pos(j,1),   getZ(i+1, j));
+		Point BR(voxel2Pos(i+1,0), voxel2Pos(j+1,1), getZ(i+1, j+1));
+		Point BL(voxel2Pos(i,0),   voxel2Pos(j+1,1), getZ(i,   j+1));
+		Point pts[4] = {
+				(TL), (TR),
+				(BR), (BL)};
+
+		hitSomething = IntersectHelper(rayW2O, pts, i, j, &isect);
+
+		if (!bounds.IntersectP(rayW2O)) return false;
+
+		// in heightfields, there will be no overlap
+		if (hitSomething) break;
+
+        // Advance to next voxel
+
+        // Find _stepAxis_ for stepping to next voxel
+        int bits = ((NextCrossingT[0] < NextCrossingT[1]) << 2) +
+                   ((NextCrossingT[0] < NextCrossingT[2]) << 1) +
+                   ((NextCrossingT[1] < NextCrossingT[2]));
+		const int cmpToAxis[8] = { 2, 1, 2, 1, 2, 2, 0, 0 };
+        int stepAxis = cmpToAxis[bits];
+		if (rayW2O.maxt < NextCrossingT[stepAxis])
+            break;
+        Pos[stepAxis] += Step[stepAxis];
+        if (Pos[stepAxis] == Out[stepAxis])
+            break;
+        NextCrossingT[stepAxis] += DeltaT[stepAxis];
+    }
+
+	if (!hitSomething) return false;
+
+	*tHit = tHit1;
+	*dg = isect.dg;
+	*rayEpsilon = isect.rayEpsilon;
+
+
+	return true;
+}
+
+bool Heightfield2::IntersectHelper(const Ray &ray, const Point *pts, int i, int j, Intersection *in) const {
+
+
+	BBox bounds(Union(BBox(pts[0], pts[1]), BBox(pts[2], pts[3])));
+	if (!bounds.IntersectP(ray)) return false;
+
+
+	int vptr[6] = {0,1,2,0,2,3};
+
+	Normal normals[4] = {
+		vertexNormals[j*nx + i],
+		vertexNormals[j*nx + i + 1],
+		vertexNormals[(j+1)*nx + i + 1],
+		vertexNormals[(j+1)*nx + i]};
+	float uvs[8] = {
+		pts[0].x, pts[0].y,
+		pts[1].x, pts[1].y,
+		pts[2].x, pts[2].y,
+		pts[3].x, pts[3].y};
+
+	TriangleMesh *triMesh = new TriangleMesh(ObjectToWorld, WorldToObject, ReverseOrientation,
+		2, 4, vptr, pts, normals, NULL, uvs, NULL);
+	Triangle *triangle = new Triangle(ObjectToWorld, WorldToObject, ReverseOrientation, triMesh, 0);
+
+	Triangle *triangle2 = new Triangle(ObjectToWorld, WorldToObject, ReverseOrientation, triMesh, 1);
+
+
+	Intersection in1, in2;
+	bool tri1 = triangle->Intersect((*ObjectToWorld)(ray), &(tHit1), &(in1.rayEpsilon), &(in1.dg));
+	bool tri2 = triangle2->Intersect((*ObjectToWorld)(ray), &(tHit2), &(in2.rayEpsilon), &(in2.dg));
+
+	if (!tri1 && !tri2) return false;
+
+	if (tri1 && tri2) {
+		if (tHit1 < tHit2) {
+			tHit2 = tHit1;
+			*in = in1;
+			tri2 = false;
+		} else {
+			tHit1 = tHit2;
+			*in = in2;
+			tri1 = false;
+		}
+	} else if (tri1) {
+		*in = in1;
+		tHit2 = tHit1;
+	} else {
+		*in = in2;
+		tHit1 = tHit2;
+	}
+
+	return true;
+}
+
+bool Heightfield2::IntersectP(const Ray &ray) const {
+	//float tHit, rayEpsilon;
+	//DifferentialGeometry dg;
+	//return Intersect(ray, &tHit, &rayEpsilon, &dg);
 	return false;
 }
-bool Heightfield2::IntersectP(const Ray &ray) const{
+bool Heightfield2::IntersectP(const Ray &ray, float *hit0, float *hit1) const{
+	float t0 = ray.mint, t1 = ray.maxt;
+	for(int axis = 0; axis < 3; ++axis)
+	{
+		float invRayDir = 1.f / ray.d[axis];
+		float tNear = (nVoxels[axis] - ray.o[axis]) * invRayDir;
+		float tFar  = (nVoxels[axis] - ray.o[axis]) * invRayDir;
 
+		if (tNear > tFar) swap(tNear, tFar);
+
+		t0 = tNear > t0 ? tNear : t0;
+		t1 = tFar < t1 ? tFar : t1;
+		if (t0 > t1) return false;
+	}
+	if (hit0) *hit0 = t0;
+	if (hit1) *hit1 = t1;
 	return false;
 }
+
+void Heightfield2::GetShadingGeometry(const Transform &obj2world,
+        const DifferentialGeometry &dg,
+        DifferentialGeometry *dgShading) const {
+	dg.shape->GetShadingGeometry(obj2world,dg,dgShading);
+}
+
 
 BBox Heightfield2::ObjectBound() const {
 //    BBox objectBounds;
