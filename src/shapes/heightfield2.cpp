@@ -111,14 +111,14 @@ void Heightfield2::InitVertexNormals() {
 			//
 			if (i > 0 && j > 0 && i < width && j < height)
 			{
-				p[0] = Point( (i-1)/(float)voxel2posX, (j-1)/(float)voxel2posY, z[(i-1)+(j-1)*nx]/(float)voxel2posZ);
-				p[1] = Point( (i  )/(float)voxel2posX, (j-1)/(float)voxel2posY, z[i+(j-1)*nx]/(float)voxel2posZ);
-				p[2] = Point( (i+1)/(float)voxel2posX, (j-1)/(float)voxel2posY, z[(i+1)+(j-1)*nx]/(float)voxel2posZ);
-				p[3] = Point( (i-1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i-1)+j*nx]/(float)voxel2posZ);
-				p[5] = Point( (i+1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i+1)+j*nx]/(float)voxel2posZ);
-				p[6] = Point( (i-1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i-1)+(j+1)*nx]/(float)voxel2posZ);
-				p[7] = Point( (i  )/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j+1)*nx]/(float)voxel2posZ);
-				p[8] = Point( (i+1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i+1)+(j+1)*nx]/(float)voxel2posZ);
+				p[0] = Point( (i-1)/(float)voxel2posX, (j-1)/(float)voxel2posY, z[(i-1)+(j-1)*nx]);
+				p[1] = Point( (i  )/(float)voxel2posX, (j-1)/(float)voxel2posY, z[i+(j-1)*nx]);
+				p[2] = Point( (i+1)/(float)voxel2posX, (j-1)/(float)voxel2posY, z[(i+1)+(j-1)*nx]);
+				p[3] = Point( (i-1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i-1)+j*nx]);
+				p[5] = Point( (i+1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i+1)+j*nx]);
+				p[6] = Point( (i-1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i-1)+(j+1)*nx]);
+				p[7] = Point( (i  )/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j+1)*nx]);
+				p[8] = Point( (i+1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i+1)+(j+1)*nx]);
 			}
 			else
 			{
@@ -133,33 +133,33 @@ void Heightfield2::InitVertexNormals() {
 					p[3] = p[4];
 					p[6] = p[4];
 
-					p[5] = Point((i+1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i+1)+j*nx]/(float)voxel2posZ);
-					p[7] = Point((i  )/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j+1)*nx]/(float)voxel2posZ);
-					p[8] = Point((i+1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i+1)+(j+1)*nx]/(float)voxel2posZ);
+					p[5] = Point((i+1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i+1)+j*nx]);
+					p[7] = Point((i  )/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j+1)*nx]);
+					p[8] = Point((i+1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i+1)+(j+1)*nx]);
 				}
 				else if (i == 0 && j > 0 )
 				{
-					p[0] = Point(i/(float)voxel2posX, (j-1)/(float)voxel2posY, z[i+(j-1)*nx]/(float)voxel2posZ);
-					p[3] = Point(i/(float)voxel2posX, (j  )/(float)voxel2posY, z[i+j*nx]/(float)voxel2posZ);
-					p[6] = Point(i/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j+1)*nx]/(float)voxel2posZ);
+					p[0] = Point(i/(float)voxel2posX, (j-1)/(float)voxel2posY, z[i+(j-1)*nx]);
+					p[3] = Point(i/(float)voxel2posX, (j  )/(float)voxel2posY, z[i+j*nx]);
+					p[6] = Point(i/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j+1)*nx]);
 
-					p[1] = Point((i  )/(float)voxel2posX, (j-1)/(float)voxel2posY, z[i+(j-1)*nx]/(float)voxel2posZ);
-					p[2] = Point((i+1)/(float)voxel2posX, (j-1)/(float)voxel2posY, z[(i+1)+(j-1)*nx]/(float)voxel2posZ);
-					p[5] = Point((i+1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i+1)+j*nx]/(float)voxel2posZ);
-					p[7] = Point((i  )/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j+1)*nx]/(float)voxel2posZ);
-					p[8] = Point((i+1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i+1)+(j+1)*nx]/(float)voxel2posZ);
+					p[1] = Point((i  )/(float)voxel2posX, (j-1)/(float)voxel2posY, z[i+(j-1)*nx]);
+					p[2] = Point((i+1)/(float)voxel2posX, (j-1)/(float)voxel2posY, z[(i+1)+(j-1)*nx]);
+					p[5] = Point((i+1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i+1)+j*nx]);
+					p[7] = Point((i  )/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j+1)*nx]);
+					p[8] = Point((i+1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i+1)+(j+1)*nx]);
 				}
 				else if (i > 0  && j == 0)
 				{
-					p[0] = Point((i-1)/(float)voxel2posX, j/(float)voxel2posY, z[(i-1)+j*nx]/(float)voxel2posZ);
-					p[1] = Point((i  )/(float)voxel2posX, j/(float)voxel2posY, z[i+j*nx]/(float)voxel2posZ);
-					p[2] = Point((i+1)/(float)voxel2posX, j/(float)voxel2posY, z[(i+1)+j*nx]/(float)voxel2posZ);
+					p[0] = Point((i-1)/(float)voxel2posX, j/(float)voxel2posY, z[(i-1)+j*nx]);
+					p[1] = Point((i  )/(float)voxel2posX, j/(float)voxel2posY, z[i+j*nx]);
+					p[2] = Point((i+1)/(float)voxel2posX, j/(float)voxel2posY, z[(i+1)+j*nx]);
 
-					p[3] = Point((i-1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i-1)+j*nx]/(float)voxel2posZ);
-					p[5] = Point((i+1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i+1)+j*nx]/(float)voxel2posZ);
-					p[6] = Point((i-1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i-1)+(j+1)*nx]/(float)voxel2posZ);
-					p[7] = Point((i  )/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j+1)*nx]/(float)voxel2posZ);
-					p[8] = Point((i+1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i+1)+(j+1)*nx]/(float)voxel2posZ);
+					p[3] = Point((i-1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i-1)+j*nx]);
+					p[5] = Point((i+1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i+1)+j*nx]);
+					p[6] = Point((i-1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i-1)+(j+1)*nx]);
+					p[7] = Point((i  )/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j+1)*nx]);
+					p[8] = Point((i+1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i+1)+(j+1)*nx]);
 				}
 				//
 				// right button
@@ -172,33 +172,33 @@ void Heightfield2::InitVertexNormals() {
 					p[7] = p[4];
 					p[8] = p[4];
 
-					p[0] = Point((i-1)/(float)voxel2posX, (j-1)/(float)voxel2posY, z[(i-1)+(j-1)*nx]/(float)voxel2posZ);
-					p[1] = Point((i  )/(float)voxel2posX, (j-1)/(float)voxel2posY, z[i+(j-1)*nx]/(float)voxel2posZ);
-					p[3] = Point((i-1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i-1)+j*nx]/(float)voxel2posZ);
+					p[0] = Point((i-1)/(float)voxel2posX, (j-1)/(float)voxel2posY, z[(i-1)+(j-1)*nx]);
+					p[1] = Point((i  )/(float)voxel2posX, (j-1)/(float)voxel2posY, z[i+(j-1)*nx]);
+					p[3] = Point((i-1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i-1)+j*nx]);
 				}
 				else if (i == width && j <  height)
 				{
-					p[2] = Point(i/(float)voxel2posX, (j-1)/(float)voxel2posY, z[i+(j-1)*nx]/(float)voxel2posZ);
-					p[5] = Point(i/(float)voxel2posX, (j  )/(float)voxel2posY, z[i+j*nx]/(float)voxel2posZ);
-					p[8] = Point(i/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j-1)*nx]/(float)voxel2posZ);
+					p[2] = Point(i/(float)voxel2posX, (j-1)/(float)voxel2posY, z[i+(j-1)*nx]);
+					p[5] = Point(i/(float)voxel2posX, (j  )/(float)voxel2posY, z[i+j*nx]);
+					p[8] = Point(i/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j-1)*nx]);
 
-					p[0] = Point((i-1)/(float)voxel2posX, (j-1)/(float)voxel2posY, z[(i-1)+(j-1)*nx]/(float)voxel2posZ);
-					p[1] = Point((i  )/(float)voxel2posX, (j-1)/(float)voxel2posY, z[i+(j-1)*nx]/(float)voxel2posZ);
-					p[3] = Point((i-1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i-1)+j*nx]/(float)voxel2posZ);
-					p[6] = Point((i-1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i-1)+(j+1)*nx]/(float)voxel2posZ);
-					p[7] = Point((i  )/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j+1)*nx]/(float)voxel2posZ);
+					p[0] = Point((i-1)/(float)voxel2posX, (j-1)/(float)voxel2posY, z[(i-1)+(j-1)*nx]);
+					p[1] = Point((i  )/(float)voxel2posX, (j-1)/(float)voxel2posY, z[i+(j-1)*nx]);
+					p[3] = Point((i-1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i-1)+j*nx]);
+					p[6] = Point((i-1)/(float)voxel2posX, (j+1)/(float)voxel2posY, z[(i-1)+(j+1)*nx]);
+					p[7] = Point((i  )/(float)voxel2posX, (j+1)/(float)voxel2posY, z[i+(j+1)*nx]);
 				}
 				else if (i <  width && j == height)
 				{
-					p[6] = Point((i-1)/(float)voxel2posX, j/(float)voxel2posY, z[(i-1)+j*nx]/(float)voxel2posZ);
-					p[7] = Point((i  )/(float)voxel2posX, j/(float)voxel2posY, z[i+j*nx]/(float)voxel2posZ);
-					p[8] = Point((i+1)/(float)voxel2posX, j/(float)voxel2posY, z[(i+1)+j*nx]/(float)voxel2posZ);
+					p[6] = Point((i-1)/(float)voxel2posX, j/(float)voxel2posY, z[(i-1)+j*nx]);
+					p[7] = Point((i  )/(float)voxel2posX, j/(float)voxel2posY, z[i+j*nx]);
+					p[8] = Point((i+1)/(float)voxel2posX, j/(float)voxel2posY, z[(i+1)+j*nx]);
 
-					p[0] = Point((i-1)/(float)voxel2posX, (j-1)/(float)voxel2posY, z[(i-1)+(j-1)*nx]/(float)voxel2posZ);
-					p[1] = Point((i  )/(float)voxel2posX, (j-1)/(float)voxel2posY, z[i+(j-1)*nx]/(float)voxel2posZ);
-					p[2] = Point((i+1)/(float)voxel2posX, (j-1)/(float)voxel2posY, z[(i+1)+(j-1)*nx]/(float)voxel2posZ);
-					p[3] = Point((i-1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i-1)+j*nx]/(float)voxel2posZ);
-					p[5] = Point((i+1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i+1)+j*nx]/(float)voxel2posZ);
+					p[0] = Point((i-1)/(float)voxel2posX, (j-1)/(float)voxel2posY, z[(i-1)+(j-1)*nx]);
+					p[1] = Point((i  )/(float)voxel2posX, (j-1)/(float)voxel2posY, z[i+(j-1)*nx]);
+					p[2] = Point((i+1)/(float)voxel2posX, (j-1)/(float)voxel2posY, z[(i+1)+(j-1)*nx]);
+					p[3] = Point((i-1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i-1)+j*nx]);
+					p[5] = Point((i+1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i+1)+j*nx]);
 				}
 			}
 			vertexNormals[i+j*nx] = Normal( Normalize(	Cross( (p[0]-p[4]) ,(p[1]-p[4]) ) + \
@@ -265,16 +265,65 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
 	Intersection isect;
     for (;;) {
 		int i = Pos[0], j = Pos[1];
-		Point TL(voxel2Pos(i,0),   voxel2Pos(j,1),   getZ(i,   j));
-		Point TR(voxel2Pos(i+1,0), voxel2Pos(j,1),   getZ(i+1, j));
-		Point BR(voxel2Pos(i+1,0), voxel2Pos(j+1,1), getZ(i+1, j+1));
-		Point BL(voxel2Pos(i,0),   voxel2Pos(j+1,1), getZ(i,   j+1));
-		Point pts[4] =	{
-						(TL), (TR),
-						(BR), (BL)
-						};
 
-		hitSomething = IntersectHelper(ray, tHit, pts, i, j, &isect);
+		//
+		// my style
+		//
+		Point *triangle = new Point[4];
+
+		triangle[0] = Point(voxel2Pos(i,0)		, voxel2Pos(j,1)	,z[i+ j*nx]);
+		triangle[1] = Point(voxel2Pos(i+1,0)	, voxel2Pos(j,1)	,z[(i+1) + j*nx]);
+		triangle[2] = Point(voxel2Pos(i,0)		, voxel2Pos(j+1,1)	,z[i + (j+1)*nx]);
+		triangle[3] = Point(voxel2Pos(i+1,0)	, voxel2Pos(j+1,1)	,z[(i+1) + (j+1)*nx]);
+
+		BBox bounds(Union(BBox(triangle[0], triangle[1]), BBox(triangle[2], triangle[3])));
+		if (bounds.IntersectP(ray))
+		{
+			int vptr[6] = {	0,1,3,0,2,3 };
+
+			Normal normals[4] = {
+						vertexNormals[j*nx + i],
+						vertexNormals[j*nx + i+1],
+						vertexNormals[(j+1)*nx + i],
+						vertexNormals[(j+1)*nx + i+1]};
+
+			TriangleMesh *triMesh = new TriangleMesh(ObjectToWorld, WorldToObject, ReverseOrientation,
+					2, 4, vptr, triangle, normals, NULL, NULL, NULL);
+			Triangle *triangle1 = new Triangle(ObjectToWorld, WorldToObject, ReverseOrientation, triMesh, 0);
+			Triangle *triangle2 = new Triangle(ObjectToWorld, WorldToObject, ReverseOrientation, triMesh, 1);
+
+			float tHit1,tHit2;
+			Intersection in1, in2;
+			bool tri1 = triangle1->Intersect((*ObjectToWorld)(ray), &(tHit1), &(in1.rayEpsilon), &(in1.dg));
+			bool tri2 = triangle2->Intersect((*ObjectToWorld)(ray), &(tHit2), &(in2.rayEpsilon), &(in2.dg));
+
+			if (!tri1 && !tri2) {
+				hitSomething = false;
+			}
+			else
+			{
+				if (tri1 && tri2) {
+					if (tHit1 < tHit2) {
+						isect = in1;
+						tri2 = false;
+						*tHit = tHit1;
+					} else {
+						isect = in2;
+						tri1 = false;
+						*tHit = tHit2;
+					}
+				} else if (tri1) {
+					isect = in1;
+					*tHit = tHit1;
+				} else {
+					isect = in2;
+					*tHit = tHit2;
+				}
+				hitSomething = true;
+			}
+		}
+
+
 
 		// in heightfields, there will be no overlap
 		if (hitSomething) break;
@@ -299,58 +348,6 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
 	*rayEpsilon = isect.rayEpsilon;
 
 	return hitSomething;
-}
-
-bool Heightfield2::IntersectHelper(const Ray &ray, float *tHit, const Point *pts, int i, int j, Intersection *in) const {
-	BBox bounds(Union(BBox(pts[0], pts[1]), BBox(pts[2], pts[3])));
-	if (!bounds.IntersectP(ray)) return false;
-
-	// two Triangles vertex Index
-	int vptr[6] = {	0,1,2,\
-					0,2,3 };
-
-	Normal normals[4] = {
-		vertexNormals[j*nx + i],
-		vertexNormals[j*nx + i + 1],
-		vertexNormals[(j+1)*nx + i + 1],
-		vertexNormals[(j+1)*nx + i]};
-	float uvs[8] = {
-		pts[0].x, pts[0].y,
-		pts[1].x, pts[1].y,
-		pts[2].x, pts[2].y,
-		pts[3].x, pts[3].y};
-
-	TriangleMesh *triMesh = new TriangleMesh(ObjectToWorld, WorldToObject, ReverseOrientation,
-		2, 4, vptr, pts, normals, NULL, uvs, NULL);
-	Triangle *triangle1 = new Triangle(ObjectToWorld, WorldToObject, ReverseOrientation, triMesh, 0);
-	Triangle *triangle2 = new Triangle(ObjectToWorld, WorldToObject, ReverseOrientation, triMesh, 1);
-
-	float tHit1,tHit2;
-	Intersection in1, in2;
-	bool tri1 = triangle1->Intersect((*ObjectToWorld)(ray), &(tHit1), &(in1.rayEpsilon), &(in1.dg));
-	bool tri2 = triangle2->Intersect((*ObjectToWorld)(ray), &(tHit2), &(in2.rayEpsilon), &(in2.dg));
-
-	if (!tri1 && !tri2) return false;
-
-	if (tri1 && tri2) {
-		if (tHit1 < tHit2) {
-			*in = in1;
-			tri2 = false;
-			*tHit = tHit1;
-		} else {
-			*in = in2;
-			tri1 = false;
-			*tHit = tHit2;
-		}
-	} else if (tri1) {
-		*in = in1;
-		*tHit = tHit1;
-	} else {
-		*in = in2;
-		*tHit = tHit2;
-	}
-
-	return true;
 }
 
 bool Heightfield2::IntersectP(const Ray &ray) const {
@@ -409,50 +406,4 @@ Heightfield2 *CreateHeightfield2Shape (const Transform *o2w, const Transform *w2
     Assert(nu != -1 && nv != -1 && Pz != NULL);
     return new Heightfield2(o2w, w2o, reverseOrientation, nu, nv, Pz);
 }
-
-
-//void Heightfield2::Refine(vector<Reference<Shape> > &refined) const {
-//    int ntris = 2*(nx-1)*(ny-1);
-//    refined.reserve(ntris);
-//    int *verts = new int[3*ntris];
-//    Point *P = new Point[nx*ny];
-//    float *uvs = new float[2*nx*ny];
-//    int nverts = nx*ny;
-//    int x, y;
-//    // Compute heightfield2 vertex positions
-//    int pos = 0;
-//    for (y = 0; y < ny; ++y) {
-//        for (x = 0; x < nx; ++x) {
-//            P[pos].x = uvs[2*pos]   = (float)x / (float)(nx-1);
-//            P[pos].y = uvs[2*pos+1] = (float)y / (float)(ny-1);
-//            P[pos].z = z[pos];
-//            ++pos;
-//        }
-//    }
-//
-//    // Fill in heightfield2 vertex offset array
-//    int *vp = verts;
-//    for (y = 0; y < ny-1; ++y) {
-//        for (x = 0; x < nx-1; ++x) {
-//#define VERT(x,y) ((x)+(y)*nx)
-//            *vp++ = VERT(x, y);
-//            *vp++ = VERT(x+1, y);
-//            *vp++ = VERT(x+1, y+1);
-//
-//            *vp++ = VERT(x, y);
-//            *vp++ = VERT(x+1, y+1);
-//            *vp++ = VERT(x, y+1);
-//        }
-//#undef VERT
-//    }
-//    ParamSet paramSet;
-//    paramSet.AddInt("indices", verts, 3*ntris);
-//    paramSet.AddFloat("uv", uvs, 2 * nverts);
-//    paramSet.AddPoint("P", P, nverts);
-//    refined.push_back(CreateTriangleMeshShape(ObjectToWorld, WorldToObject, ReverseOrientation, paramSet));
-//    delete[] P;
-//    delete[] uvs;
-//    delete[] verts;
-//}
-
 

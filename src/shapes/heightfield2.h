@@ -66,7 +66,6 @@ private:
     Point   *points;
     int     nVoxels[3]; // stores [nx-1,ny-1,1], number of voxels in each dimension
     BBox    bounds;
-    bool IntersectHelper(const Ray &ray, float *tHit, const Point *pts, int i, int j, Intersection *in) const;
 
     int pos2Voxel(const Point &P, int axis) const {
         if (axis == 2) return 0;
@@ -78,9 +77,6 @@ private:
     }
     float voxel2Pos(int p, int axis) const {
         return (float)p / (float)(nVoxels[axis]);
-    }
-    float getZ(int x, int y) const {
-        return z[x + nx*y];
     }
 
 };
