@@ -287,7 +287,7 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
 		 *       |    \  |
 	 	 *       |______\|
 	  	 *     .2        .3
-		 *   (i,j+1)  (i+1,j+1)
+		 *   (i,j+1)   (i+1,j+1)
 		 *
 		**/
 		Point *triangle = new Point[4];
