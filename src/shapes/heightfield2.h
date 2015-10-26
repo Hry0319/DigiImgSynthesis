@@ -65,6 +65,7 @@ private:
     Normal  *vertexNormals;
     Point   *points;
     int     nVoxels[3]; // stores [nx-1,ny-1,1], number of voxels in each dimension
+    Vector  voxelwidth;
     BBox    bounds;
 
     int pos2Voxel(const Point &P, int axis) const {

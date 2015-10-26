@@ -62,13 +62,14 @@ Heightfield2::Heightfield2(
 	height = ny;
 	depth  = 1;
 
+//	BBox bounds = BBox(Point(0,0,min_z), Point(1,1,max_z));
+//	Vector _delta = bounds.pMax - bounds.pMin;
+//	voxelwidth = Vector(_delta[0]/width, _delta[1]/height, 0.0f);
+	voxelwidth = Vector(1.f/width, 1.f/height, 0.0f);
 
     nVoxels[0] = nx - 1;
     nVoxels[1] = ny - 1;
 	nVoxels[2] = 1;
-//	for (int axis = 0; axis < 3; ++axis) {
-//        nVoxels[axis] = Clamp(nVoxels[axis], 1, 64);
-//    }
 
 	InitVertexNormals();
 	InitTriangles();
@@ -214,11 +215,10 @@ void Heightfield2::InitVertexNormals() {
 		}
 	}
 }
-unsigned int dbg_count = 0;
+
 bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, DifferentialGeometry *dg) const{
 	Ray ray;
 //	(*WorldToObject)(ray, &rayW2O);
-
 	(*WorldToObject)(r, &ray);
 
 	float rayT;
@@ -233,7 +233,7 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
 	}
 
     // FirstHitPoint
-    // Point operator()(float t) const { return o + d * t; }
+    // ray's member : Point operator()(float t) const { return o + d * t; }
     Point gridIntersect = ray(rayT);
     //
 	// Set up 3D DDA for ray (ref to GridAccel)
@@ -246,7 +246,7 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
         if (ray.d[axis] >= 0) {
         // + Handle ray with "positive" direction for voxel stepping
             NextCrossingT[axis] = rayT + (voxel2Pos(Pos[axis]+1, axis) - gridIntersect[axis]) / ray.d[axis];
-            DeltaT[axis] = 1.f / (nVoxels[axis] * ray.d[axis]);    //DeltaT[axis] = width[axis] / ray.d[axis];
+            DeltaT[axis] = 	(voxelwidth[axis] / ray.d[axis] );
             Step[axis] = 1;
             Out[axis] = nVoxels[axis];
         }
@@ -254,7 +254,7 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
         {
         // - Handle ray with "negative" direction for voxel stepping
             NextCrossingT[axis] = rayT + (voxel2Pos(Pos[axis], axis) - gridIntersect[axis]) / ray.d[axis];
-            DeltaT[axis] = -1.f / (nVoxels[axis] * ray.d[axis]);   //DeltaT[axis] = -width[axis] / ray.d[axis];
+			DeltaT[axis] = -(voxelwidth[axis] / ray.d[axis] );
             Step[axis] = -1;
             Out[axis] = -1;
         }
