@@ -90,6 +90,13 @@ void Heightfield2::InitTriangles() {
 //
 // Heightfield2::InitNormals()
 //
+/**
+-*
+ *	    0  1  2
+ *      3  4  5
+ *      6  7  8
+-*
+**/
 void Heightfield2::InitVertexNormals() {
 	Point       p[9];
 	int 		voxel2posX = width-1;
@@ -268,9 +275,21 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
     for (;;) {
 		int i = Pos[0], j = Pos[1];
 
-		//
-		// my style
-		//
+		/**
+		 *      4 points
+		 *      2 triangles
+         *
+         *
+		 *    (i,j)    (i+1,j)
+		 *     .0 _______.1
+		 *       |\      |
+         *       |  \    |
+		 *       |    \  |
+	 	 *       |______\|
+	  	 *     .2        .3
+		 *   (i,j+1)  (i+1,j+1)
+		 *
+		**/
 		Point *triangle = new Point[4];
 
 		triangle[0] = Point(voxel2Pos(i,0)		, voxel2Pos(j,1)	,z[i+ j*nx]);
@@ -325,13 +344,10 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
 			}
 		}
 
-
-
 		// in heightfields, there will be no overlap
 		if (hitSomething) break;
 
         // Advance to next voxel
-
         // Find _stepAxis_ for stepping to next voxel
         int bits = ((NextCrossingT[0] < NextCrossingT[1]) << 2) +
                    ((NextCrossingT[0] < NextCrossingT[2]) << 1) +
