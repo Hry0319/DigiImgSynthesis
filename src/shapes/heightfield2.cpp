@@ -220,23 +220,26 @@ void Heightfield2::InitVertexNormals() {
 	}
 }
 unsigned int dbg_count = 0;
-bool Heightfield2::Intersect(const Ray &ray, float *tHit, float *rayEpsilon, DifferentialGeometry *dg) const{
-	Ray rayW2O;
-	(*WorldToObject)(ray, &rayW2O);
+bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, DifferentialGeometry *dg) const{
+	Ray ray;
+//	(*WorldToObject)(ray, &rayW2O);
+
+	(*WorldToObject)(r, &ray);
+
 	float rayT;
 	BBox bounds = ObjectBound();
-    if (bounds.Inside(rayW2O(rayW2O.mint)))
+    if (bounds.Inside(ray(ray.mint)))
     {
-        rayT = rayW2O.mint;
+        rayT = ray.mint;
     }
-    else if (!bounds.IntersectP(rayW2O, &rayT))
+    else if (!bounds.IntersectP(ray, &rayT))
     {
         return false;
 	}
 
     // FirstHitPoint
     // Point operator()(float t) const { return o + d * t; }
-    Point gridIntersect = rayW2O(rayT);
+    Point gridIntersect = ray(rayT);
     //
 	// Set up 3D DDA for ray (ref to GridAccel)
 	//
@@ -245,18 +248,18 @@ bool Heightfield2::Intersect(const Ray &ray, float *tHit, float *rayEpsilon, Dif
     for (int axis = 0; axis < 3; ++axis) {
         // Compute current voxel for axis
         Pos[axis] = pos2Voxel(gridIntersect, axis);
-        if (rayW2O.d[axis] >= 0) {
+        if (ray.d[axis] >= 0) {
         // + Handle ray with "positive" direction for voxel stepping
-            NextCrossingT[axis] = rayT + (voxel2Pos(Pos[axis]+1, axis) - gridIntersect[axis]) / rayW2O.d[axis];
-            DeltaT[axis] = 1.f / (nVoxels[axis] * rayW2O.d[axis]);    //DeltaT[axis] = width[axis] / ray.d[axis];
+            NextCrossingT[axis] = rayT + (voxel2Pos(Pos[axis]+1, axis) - gridIntersect[axis]) / ray.d[axis];
+            DeltaT[axis] = 1.f / (nVoxels[axis] * ray.d[axis]);    //DeltaT[axis] = width[axis] / ray.d[axis];
             Step[axis] = 1;
             Out[axis] = nVoxels[axis];
         }
         else
         {
         // - Handle ray with "negative" direction for voxel stepping
-            NextCrossingT[axis] = rayT + (voxel2Pos(Pos[axis], axis) - gridIntersect[axis]) / rayW2O.d[axis];
-            DeltaT[axis] = -1.f / (nVoxels[axis] * rayW2O.d[axis]);   //DeltaT[axis] = -width[axis] / ray.d[axis];
+            NextCrossingT[axis] = rayT + (voxel2Pos(Pos[axis], axis) - gridIntersect[axis]) / ray.d[axis];
+            DeltaT[axis] = -1.f / (nVoxels[axis] * ray.d[axis]);   //DeltaT[axis] = -width[axis] / ray.d[axis];
             Step[axis] = -1;
             Out[axis] = -1;
         }
@@ -276,9 +279,7 @@ bool Heightfield2::Intersect(const Ray &ray, float *tHit, float *rayEpsilon, Dif
 						(BR), (BL)
 						};
 
-		hitSomething = IntersectHelper(rayW2O, pts, i, j, &isect);
-
-		if (!bounds.IntersectP(rayW2O)) return false;
+		hitSomething = IntersectHelper(ray, pts, i, j, &isect);
 
 		// in heightfields, there will be no overlap
 		if (hitSomething) break;
@@ -291,7 +292,7 @@ bool Heightfield2::Intersect(const Ray &ray, float *tHit, float *rayEpsilon, Dif
                    ((NextCrossingT[1] < NextCrossingT[2]));
 		const int cmpToAxis[8] = { 2, 1, 2, 1, 2, 2, 0, 0 };
         int stepAxis = cmpToAxis[bits];
-		if (rayW2O.maxt < NextCrossingT[stepAxis])
+		if (ray.maxt < NextCrossingT[stepAxis])
             break;
         Pos[stepAxis] += Step[stepAxis];
         if (Pos[stepAxis] == Out[stepAxis])
