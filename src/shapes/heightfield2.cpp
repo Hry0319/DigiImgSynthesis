@@ -202,15 +202,17 @@ void Heightfield2::InitVertexNormals() {
 					p[5] = Point((i+1)/(float)voxel2posX, (j  )/(float)voxel2posY, z[(i+1)+j*nx]);
 				}
 			}
-			vertexNormals[i+j*nx] = Normal( Normalize(	Cross( (p[0]-p[4]) ,(p[1]-p[4]) ) + \
-												Cross( (p[1]-p[4]) ,(p[2]-p[4]) ) + \
-												Cross( (p[2]-p[4]) ,(p[5]-p[4]) ) + \
-												Cross( (p[5]-p[4]) ,(p[8]-p[4]) ) + \
-												Cross( (p[8]-p[4]) ,(p[7]-p[4]) ) + \
-												Cross( (p[7]-p[4]) ,(p[6]-p[4]) ) + \
-												Cross( (p[6]-p[4]) ,(p[3]-p[4]) ) + \
-												Cross( (p[3]-p[4]) ,(p[0]-p[4]) )
-												))*(-1);
+			vertexNormals[i+j*nx] = Normal(	Normalize(
+													Cross( (p[0]-p[4]) ,(p[1]-p[4]) ) + \
+													Cross( (p[1]-p[4]) ,(p[2]-p[4]) ) + \
+													Cross( (p[2]-p[4]) ,(p[5]-p[4]) ) + \
+													Cross( (p[5]-p[4]) ,(p[8]-p[4]) ) + \
+													Cross( (p[8]-p[4]) ,(p[7]-p[4]) ) + \
+													Cross( (p[7]-p[4]) ,(p[6]-p[4]) ) + \
+													Cross( (p[6]-p[4]) ,(p[3]-p[4]) ) + \
+													Cross( (p[3]-p[4]) ,(p[0]-p[4]) )
+													)
+												)*(-1);
 
 		}
 	}
