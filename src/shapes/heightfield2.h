@@ -68,7 +68,6 @@ private:
     BBox    bounds;
 
     int pos2Voxel(const Point &P, int axis) const {
-//        if (axis == 2) return 0;
         //Point[0] is Point.x
         //Point[1] is Point.y
         //Point[2] is Point.z

@@ -64,12 +64,8 @@ Heightfield2::Heightfield2(
 //	voxelwidth = Vector(_delta[0]/width, _delta[1]/height, 0.0f);
 
 
-//	float cubeRoot = 3.f * powf(1.f, 1.f/3.f);
-//    float voxelsPerUnitDist = cubeRoot;
-//    for (int axis = 0; axis < 2; ++axis) {
-//        nVoxels[axis] = Clamp(nVoxels[axis], 1, 64);
-//    }
-//
+
+
 
 //	voxelwidth = Vector(1.f/width, 1.f/height, 0.0f);
 	voxelwidth[0] = 1.f/nx;
@@ -79,6 +75,13 @@ Heightfield2::Heightfield2(
     nVoxels[0] = nx -1;
     nVoxels[1] = ny -1;
 	nVoxels[2] = 1;
+
+
+	float cubeRoot = 3.f * powf(1.f, 1.f/3.f);
+    float voxelsPerUnitDist = cubeRoot;
+    for (int axis = 0; axis < 2; ++axis) {
+        nVoxels[axis] = Clamp(nVoxels[axis], 1, 64);
+    }
 
 	InitVertexNormals();
 }
@@ -308,101 +311,101 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
 						vertexNormals[(j+1)*nx + i+1]};
 
 
-			Point  IntersectTriangles[3] = {triangle[0], triangle[1], triangle[3]};
-			Normal IntersectNormals[3]   = {normals[0] , normals[1] , normals[3] };
-
-			Intersection in1, in2;
-			float tHit1,tHit2;
-			bool  isHit1,isHit2;
-			isHit1 = TriangleIntersect(ray, &(in1.rayEpsilon), IntersectTriangles, IntersectNormals, &tHit1, &(in1.dg));
-			IntersectTriangles[1] = triangle[2];
-			IntersectNormals[1]   = normals[2];
-			isHit2 = TriangleIntersect(ray, &(in2.rayEpsilon), IntersectTriangles, IntersectNormals, &tHit2, &(in2.dg));
-
-			if (!isHit1 && !isHit2) {
-				hitSomething = false;
-			}
-			else
-			{
-				if (isHit1 && isHit2) {
-					if (tHit1 < tHit2) {
-						*dg 		= in1.dg;
-						*rayEpsilon = in1.rayEpsilon;
-						isHit2 = false;
-						*tHit = tHit1;
-					} else {
-						*dg 		= in2.dg;
-						*rayEpsilon = in2.rayEpsilon;
-						isHit1 = false;
-						*tHit = tHit2;
-					}
-				} else if (isHit1) {
-					*dg 		= in1.dg;
-					*rayEpsilon = in1.rayEpsilon;
-					*tHit = tHit1;
-				} else {
-					*dg 		= in2.dg;
-					*rayEpsilon = in2.rayEpsilon;
-					*tHit = tHit2;
-				}
-				hitSomething = true;
-			}
-
-
-//			int vptr[6] = {	0,1,3,0,2,3 };
-//			float uvs[8] =	{
-//							triangle[0].x, triangle[0].y,
-//							triangle[1].x, triangle[1].y,
-//							triangle[2].x, triangle[2].y,
-//							triangle[3].x, triangle[3].y
-//							};
+//			Point  IntersectTriangles[3] = {triangle[0], triangle[1], triangle[3]};
+//			Normal IntersectNormals[3]   = {normals[0] , normals[1] , normals[3] };
 //
-//			TriangleMesh *triMesh = new TriangleMesh(
-//											ObjectToWorld,
-//											WorldToObject,
-//											ReverseOrientation,
-//											2,
-//											4,
-//											vptr,
-//											triangle,
-//											normals,
-//											NULL, uvs, NULL);
-//			Triangle *triangle1 = new Triangle(ObjectToWorld, WorldToObject, ReverseOrientation, triMesh, 0);
-//			Triangle *triangle2 = new Triangle(ObjectToWorld, WorldToObject, ReverseOrientation, triMesh, 1);
-//
-//			float tHit1,tHit2;
 //			Intersection in1, in2;
-//			bool tri1 = triangle1->Intersect((*ObjectToWorld)(ray), &(tHit1), &(in1.rayEpsilon), &(in1.dg));
-//			bool tri2 = triangle2->Intersect((*ObjectToWorld)(ray), &(tHit2), &(in2.rayEpsilon), &(in2.dg));
+//			float tHit1,tHit2;
+//			bool  isHit1,isHit2;
+//			isHit1 = TriangleIntersect(ray, &(in1.rayEpsilon), IntersectTriangles, IntersectNormals, &tHit1, &(in1.dg));
+//			IntersectTriangles[1] = triangle[2];
+//			IntersectNormals[1]   = normals[2];
+//			isHit2 = TriangleIntersect(ray, &(in2.rayEpsilon), IntersectTriangles, IntersectNormals, &tHit2, &(in2.dg));
 //
-//			if (!tri1 && !tri2) {
+//			if (!isHit1 && !isHit2) {
 //				hitSomething = false;
 //			}
 //			else
 //			{
-//				if (tri1 && tri2) {
+//				if (isHit1 && isHit2) {
 //					if (tHit1 < tHit2) {
 //						*dg 		= in1.dg;
 //						*rayEpsilon = in1.rayEpsilon;
-//						tri2 = false;
+//						isHit2 = false;
 //						*tHit = tHit1;
 //					} else {
 //						*dg 		= in2.dg;
 //						*rayEpsilon = in2.rayEpsilon;
-//						tri1 = false;
+//						isHit1 = false;
 //						*tHit = tHit2;
 //					}
-//				} else if (tri1) {
+//				} else if (isHit1) {
 //					*dg 		= in1.dg;
 //					*rayEpsilon = in1.rayEpsilon;
 //					*tHit = tHit1;
 //				} else {
-//					*dg			= in2.dg;
+//					*dg 		= in2.dg;
 //					*rayEpsilon = in2.rayEpsilon;
 //					*tHit = tHit2;
 //				}
 //				hitSomething = true;
 //			}
+
+
+			int vptr[6] = {	0,1,3,0,2,3 };
+			float uvs[8] =	{
+							triangle[0].x, triangle[0].y,
+							triangle[1].x, triangle[1].y,
+							triangle[2].x, triangle[2].y,
+							triangle[3].x, triangle[3].y
+							};
+
+			TriangleMesh *triMesh = new TriangleMesh(
+											ObjectToWorld,
+											WorldToObject,
+											ReverseOrientation,
+											2,
+											4,
+											vptr,
+											triangle,
+											normals,
+											NULL, uvs, NULL);
+			Triangle *triangle1 = new Triangle(ObjectToWorld, WorldToObject, ReverseOrientation, triMesh, 0);
+			Triangle *triangle2 = new Triangle(ObjectToWorld, WorldToObject, ReverseOrientation, triMesh, 1);
+
+			float tHit1,tHit2;
+			Intersection in1, in2;
+			bool tri1 = triangle1->Intersect((*ObjectToWorld)(ray), &(tHit1), &(in1.rayEpsilon), &(in1.dg));
+			bool tri2 = triangle2->Intersect((*ObjectToWorld)(ray), &(tHit2), &(in2.rayEpsilon), &(in2.dg));
+
+			if (!tri1 && !tri2) {
+				hitSomething = false;
+			}
+			else
+			{
+				if (tri1 && tri2) {
+					if (tHit1 < tHit2) {
+						*dg 		= in1.dg;
+						*rayEpsilon = in1.rayEpsilon;
+						tri2 = false;
+						*tHit = tHit1;
+					} else {
+						*dg 		= in2.dg;
+						*rayEpsilon = in2.rayEpsilon;
+						tri1 = false;
+						*tHit = tHit2;
+					}
+				} else if (tri1) {
+					*dg 		= in1.dg;
+					*rayEpsilon = in1.rayEpsilon;
+					*tHit = tHit1;
+				} else {
+					*dg			= in2.dg;
+					*rayEpsilon = in2.rayEpsilon;
+					*tHit = tHit2;
+				}
+				hitSomething = true;
+			}
 
 		}
 
@@ -536,8 +539,8 @@ bool Heightfield2::IntersectP(const Ray &r) const {
 void Heightfield2::GetShadingGeometry(const Transform &obj2world,
         const DifferentialGeometry &dg,
         DifferentialGeometry *dgShading) const {
-	//dg.shape->GetShadingGeometry(obj2world,dg,dgShading);
-	* dgShading = dg;
+	dg.shape->GetShadingGeometry(obj2world,dg,dgShading);
+//	* dgShading = dg;
 }
 
 BBox Heightfield2::ObjectBound() const {
