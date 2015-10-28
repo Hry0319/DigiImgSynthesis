@@ -50,13 +50,13 @@ public:
     BBox ObjectBound() const;
     bool CanIntersect() const;
 	  bool Intersect(const Ray &ray, float *tHit, float *rayEpsilon, DifferentialGeometry *dg) const;
-	  bool IntersectP(const Ray &ray, float *hit0, float *hit1) const;
+//	  bool IntersectP(const Ray &ray, float *hit0, float *hit1) const;
 	  bool IntersectP(const Ray &ray) const;
-  	void Heightfield2::GetShadingGeometry(const Transform &obj2world, const DifferentialGeometry &dg, DifferentialGeometry *dgShading) const;
+  	void GetShadingGeometry(const Transform &obj2world, const DifferentialGeometry &dg, DifferentialGeometry *dgShading) const;
 private:
 	  void InitVertexNormals();
-	  void InitTriangles();
-	  bool TriangleIntersect(Ray &r, float *rayEpsilon, Point *triangle, Normal *normals, float *tHit, DifferentialGeometry *dg, int *HalfRectOf2Triangles, int TrangleNum) const;
+    bool TriangleIntersect(Ray &r, float *rayEpsilon, Point *triangle, Normal *normals, float *tHit, DifferentialGeometry *dg) const;
+    bool TriangleIntersectP(Ray &r, Point *triangle) const;
 
     // Heightfield2 Private Data
     float   min_z,max_z;
@@ -80,6 +80,10 @@ private:
     }
     float voxel2Pos(int p, int axis) const {
         return (float)p / (float)(nVoxels[axis]);
+    }
+    float getZ(int x, int y) const {
+    	//return z[ x*ny + y ];
+    	return z[ y*nx + x];
     }
 
 };
