@@ -271,8 +271,7 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
 	// Walk grid for shadow ray
 	//
     bool hitSomething = false;
-
-	Intersection isect;
+//	Intersection isect;
     for (;;) {
 		int i = Pos[0], j = Pos[1];
 
@@ -327,24 +326,86 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
 			{
 				if (isHit1 && isHit2) {
 					if (tHit1 < tHit2) {
-						isect = in1;
+						*dg 		= in1.dg;
+						*rayEpsilon = in1.rayEpsilon;
 						isHit2 = false;
 						*tHit = tHit1;
 					} else {
-						isect = in2;
+						*dg 		= in2.dg;
+						*rayEpsilon = in2.rayEpsilon;
 						isHit1 = false;
 						*tHit = tHit2;
 					}
 				} else if (isHit1) {
-					isect = in1;
+					*dg 		= in1.dg;
+					*rayEpsilon = in1.rayEpsilon;
 					*tHit = tHit1;
 				} else {
-					isect = in2;
+					*dg 		= in2.dg;
+					*rayEpsilon = in2.rayEpsilon;
 					*tHit = tHit2;
 				}
 				hitSomething = true;
 			}
+
+
+//			int vptr[6] = {	0,1,3,0,2,3 };
+//			float uvs[8] =	{
+//							triangle[0].x, triangle[0].y,
+//							triangle[1].x, triangle[1].y,
+//							triangle[2].x, triangle[2].y,
+//							triangle[3].x, triangle[3].y
+//							};
+//
+//			TriangleMesh *triMesh = new TriangleMesh(
+//											ObjectToWorld,
+//											WorldToObject,
+//											ReverseOrientation,
+//											2,
+//											4,
+//											vptr,
+//											triangle,
+//											normals,
+//											NULL, uvs, NULL);
+//			Triangle *triangle1 = new Triangle(ObjectToWorld, WorldToObject, ReverseOrientation, triMesh, 0);
+//			Triangle *triangle2 = new Triangle(ObjectToWorld, WorldToObject, ReverseOrientation, triMesh, 1);
+//
+//			float tHit1,tHit2;
+//			Intersection in1, in2;
+//			bool tri1 = triangle1->Intersect((*ObjectToWorld)(ray), &(tHit1), &(in1.rayEpsilon), &(in1.dg));
+//			bool tri2 = triangle2->Intersect((*ObjectToWorld)(ray), &(tHit2), &(in2.rayEpsilon), &(in2.dg));
+//
+//			if (!tri1 && !tri2) {
+//				hitSomething = false;
+//			}
+//			else
+//			{
+//				if (tri1 && tri2) {
+//					if (tHit1 < tHit2) {
+//						*dg 		= in1.dg;
+//						*rayEpsilon = in1.rayEpsilon;
+//						tri2 = false;
+//						*tHit = tHit1;
+//					} else {
+//						*dg 		= in2.dg;
+//						*rayEpsilon = in2.rayEpsilon;
+//						tri1 = false;
+//						*tHit = tHit2;
+//					}
+//				} else if (tri1) {
+//					*dg 		= in1.dg;
+//					*rayEpsilon = in1.rayEpsilon;
+//					*tHit = tHit1;
+//				} else {
+//					*dg			= in2.dg;
+//					*rayEpsilon = in2.rayEpsilon;
+//					*tHit = tHit2;
+//				}
+//				hitSomething = true;
+//			}
+
 		}
+
 
 		// in heightfields, there will be no overlap
 		if (hitSomething) break;
@@ -360,8 +421,8 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
 		NextCrossingT[stepAxis] += DeltaT[stepAxis];
     }
 
-	*dg = isect.dg;
-	*rayEpsilon = isect.rayEpsilon;
+//	*dg = isect.dg;
+//	*rayEpsilon = isect.rayEpsilon;
 
 	return hitSomething;
 }
@@ -381,12 +442,6 @@ bool Heightfield2::IntersectP(const Ray &r) const {
 		if (t0 > t1) return false;
 	}
 	return false;
-
-
-
-
-
-//return false;
 
 //	Ray ray;
 //	(*WorldToObject)(r, &ray);
@@ -477,25 +532,6 @@ bool Heightfield2::IntersectP(const Ray &r) const {
 
 }
 
-
-//bool Heightfield2::IntersectP(const Ray &ray, float *hit0, float *hit1) const{
-//	float t0 = ray.mint, t1 = ray.maxt;
-//	for(int axis = 0; axis < 3; ++axis)
-//	{
-//		float invRayDir = 1.f / ray.d[axis];
-//		float tNear = (nVoxels[axis] - ray.o[axis]) * invRayDir;
-//		float tFar  = (nVoxels[axis] - ray.o[axis]) * invRayDir;
-//
-//		if (tNear > tFar) swap(tNear, tFar);
-//
-//		t0 = tNear > t0 ? tNear : t0;
-//		t1 = tFar < t1 ? tFar : t1;
-//		if (t0 > t1) return false;
-//	}
-//	if (hit0) *hit0 = t0;
-//	if (hit1) *hit1 = t1;
-//	return false;
-//}
 
 void Heightfield2::GetShadingGeometry(const Transform &obj2world,
         const DifferentialGeometry &dg,
