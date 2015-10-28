@@ -267,11 +267,11 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
 		int i = Pos[0], j = Pos[1];
 		Point TL(voxel2Pos(i,0),   voxel2Pos(j,1),   getZ(i,   j));
 		Point TR(voxel2Pos(i+1,0), voxel2Pos(j,1),   getZ(i+1, j));
-		Point BR(voxel2Pos(i+1,0), voxel2Pos(j+1,1), getZ(i+1, j+1));
 		Point BL(voxel2Pos(i,0),   voxel2Pos(j+1,1), getZ(i,   j+1));
+		Point BR(voxel2Pos(i+1,0), voxel2Pos(j+1,1), getZ(i+1, j+1));
 		Point pts[4] =	{
 						(TL), (TR),
-						(BR), (BL)
+						(BL), (BR)
 						};
 
 		hitSomething = IntersectHelper(ray, tHit, pts, i, j, &isect);
@@ -306,14 +306,15 @@ bool Heightfield2::IntersectHelper(const Ray &ray, float *tHit, const Point *pts
 	if (!bounds.IntersectP(ray)) return false;
 
 	// two Triangles vertex Index
-	int vptr[6] = {	0,1,2,\
+	int vptr[6] = {	0,1,3,\
 					0,2,3 };
 
 	Normal normals[4] = {
 		vertexNormals[j*nx + i],
 		vertexNormals[j*nx + i + 1],
-		vertexNormals[(j+1)*nx + i + 1],
-		vertexNormals[(j+1)*nx + i]};
+		vertexNormals[(j+1)*nx + i],
+		vertexNormals[(j+1)*nx + i + 1]
+		};
 	float uvs[8] = {
 		pts[0].x, pts[0].y,
 		pts[1].x, pts[1].y,
