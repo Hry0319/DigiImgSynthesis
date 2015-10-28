@@ -233,12 +233,15 @@ void Heightfield2::InitVertexNormals() {
 	}
 }
 
-bool Heightfield2::TriangleIntersect(Ray &r, float *rayEpsilon, Point *triangle, float *tHit, DifferentialGeometry *dg, int *HalfRectOf2Triangles, int TrangleNum) const{	
+bool Heightfield2::TriangleIntersect(Ray &r, float *rayEpsilon, Point *triangle, Normal *normals, float *tHit, DifferentialGeometry *dg, int *HalfRectOf2Triangles, int TrangleNum) const{	
 	Ray ray;
-	(*ObjectToWorld)(r, &ray);
-    const Point &p1 = (*ObjectToWorld)(triangle[ HalfRectOf2Triangles[0 + TrangleNum*3] ]);
-    const Point &p2 = (*ObjectToWorld)(triangle[ HalfRectOf2Triangles[1 + TrangleNum*3] ]);
-    const Point &p3 = (*ObjectToWorld)(triangle[ HalfRectOf2Triangles[2 + TrangleNum*3] ]);
+	(*ObjectToWorld)(r, &ray);	
+	int index0 = HalfRectOf2Triangles[0 + TrangleNum*3];
+	int index1 = HalfRectOf2Triangles[1 + TrangleNum*3];
+	int index2 = HalfRectOf2Triangles[2 + TrangleNum*3];
+    const Point &p1 = (*ObjectToWorld)(triangle[index0]);
+    const Point &p2 = (*ObjectToWorld)(triangle[index1]);
+    const Point &p3 = (*ObjectToWorld)(triangle[index2]);
     Vector e1 = p2 - p1;
     Vector e2 = p3 - p1;
     Vector s1 = Cross(ray.d, e2);
@@ -284,6 +287,7 @@ bool Heightfield2::TriangleIntersect(Ray &r, float *rayEpsilon, Point *triangle,
     float dv1 = uvs[1] - uvs[5];
     float dv2 = uvs[3] - uvs[5];
     Vector dp1 = p1 - p3, dp2 = p2 - p3;
+	
     float determinant = du1 * dv2 - dv1 * du2;
     if (determinant == 0.f) {
         // Handle zero determinant for triangle partial derivative matrix
@@ -294,16 +298,37 @@ bool Heightfield2::TriangleIntersect(Ray &r, float *rayEpsilon, Point *triangle,
         dpdu = ( dv2 * dp1 - dv1 * dp2) * invdet;
         dpdv = (-du2 * dp1 + du1 * dp2) * invdet;
     }
+
 	// Interpolate $(u,v)$ triangle parametric coordinates
     float b0 = 1 - b1 - b2;
     float tu = b0*uvs[0] + b1*uvs[2] + b2*uvs[4];
     float tv = b0*uvs[1] + b1*uvs[3] + b2*uvs[5];
 
+	/*
+	// manipulate the normal
+	Vector normal00= Vector(normals[index0]);
+	Vector normal01= Vector(normals[index1]);
+	Vector normal02= Vector(normals[index2]);
+	Vector avg_normal = normal00 * b0 + normal01 * b1 + normal02 * b2;
+	Vector temp_tangent(1,0,0);
+	Vector temp_surface(1,0,0);
+
+	avg_normal = Normalize(avg_normal);
+	temp_surface = Normalize(Cross(avg_normal, temp_tangent) ); //now surface is |_ avg_normal
+	temp_tangent = Normalize(Cross(temp_surface, avg_normal) );		
+
+	dpdu = temp_tangent;
+	dpdv = temp_surface;
+	*/
 
     // Fill in _DifferentialGeometry_ from triangle hit
-    *dg = DifferentialGeometry(ray(t), dpdu, dpdv,
-                               Normal(0,0,0), Normal(0,0,0),
-                               tu, tv, this);
+    *dg = DifferentialGeometry( ray(t),
+								dpdu, 
+								dpdv,
+                                Normal(0,0,0),
+								Normal(0,0,0),
+                                tu, tv, 
+								this);
     *tHit = t;
     *rayEpsilon = 1e-3f * *tHit;
 
@@ -395,12 +420,12 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
 						vertexNormals[j*nx + i+1],
 						vertexNormals[(j+1)*nx + i],
 						vertexNormals[(j+1)*nx + i+1]};
-			
+			/*
 			Intersection in1, in2;
 			float tHit1,tHit2;
 			bool  isHit1,isHit2;
-			isHit1 = TriangleIntersect(ray, &(in1.rayEpsilon), triangle, &tHit1, &(in1.dg), vptr, 0);
-			isHit2 = TriangleIntersect(ray, &(in2.rayEpsilon), triangle, &tHit2, &(in2.dg), vptr, 1);
+			isHit1 = TriangleIntersect(ray, &(in1.rayEpsilon), triangle, normals, &tHit1, &(in1.dg), vptr, 0);
+			isHit2 = TriangleIntersect(ray, &(in2.rayEpsilon), triangle, normals, &tHit2, &(in2.dg), vptr, 1);
 
 			if (!isHit1 && !isHit2) {
 				hitSomething = false;
@@ -425,15 +450,16 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
 					*tHit = tHit2;
 				}
 				hitSomething = true;
-			}
+			}*/
 
-			/*float uvs[8] =	{ 
+			
+			float uvs[8] =	{ 
 							triangle[0].x, triangle[0].y,
 							triangle[1].x, triangle[1].y,
 							triangle[2].x, triangle[2].y,
 							triangle[3].x, triangle[3].y
-							};*/
-			/*
+							};
+			
 			TriangleMesh *triMesh = new TriangleMesh(
 											ObjectToWorld,
 											WorldToObject, 
@@ -476,7 +502,7 @@ bool Heightfield2::Intersect(const Ray &r, float *tHit, float *rayEpsilon, Diffe
 				}
 				hitSomething = true;
 			}
-			*/
+			
 		}
 
 		// in heightfields, there will be no overlap
@@ -527,10 +553,8 @@ bool Heightfield2::IntersectP(const Ray &ray, float *hit0, float *hit1) const{
 void Heightfield2::GetShadingGeometry(const Transform &obj2world,
         const DifferentialGeometry &dg,
         DifferentialGeometry *dgShading) const {
-	//dg.shape->GetShadingGeometry(obj2world,dg,dgShading);
-	* dgShading = dg;
-
-
+	dg.shape->GetShadingGeometry(obj2world,dg,dgShading);
+	//* dgShading = dg;
 	
 }
 

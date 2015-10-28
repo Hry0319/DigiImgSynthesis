@@ -56,7 +56,7 @@ public:
 private:
 	  void InitVertexNormals();
 	  void InitTriangles();
-	  bool TriangleIntersect(Ray &r, float *rayEpsilon, Point *triangle, float *tHit, DifferentialGeometry *dg, int *HalfRectOf2Triangles, int TrangleNum) const;
+	  bool TriangleIntersect(Ray &r, float *rayEpsilon, Point *triangle, Normal *normals, float *tHit, DifferentialGeometry *dg, int *HalfRectOf2Triangles, int TrangleNum) const;
 
     // Heightfield2 Private Data
     float   min_z,max_z;
