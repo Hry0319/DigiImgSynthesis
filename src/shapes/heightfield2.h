@@ -50,7 +50,6 @@ public:
     BBox ObjectBound() const;
     bool CanIntersect() const;
 	  bool Intersect(const Ray &ray, float *tHit, float *rayEpsilon, DifferentialGeometry *dg) const;
-//	  bool IntersectP(const Ray &ray, float *hit0, float *hit1) const;
 	  bool IntersectP(const Ray &ray) const;
   	void GetShadingGeometry(const Transform &obj2world, const DifferentialGeometry &dg, DifferentialGeometry *dgShading) const;
 private:
@@ -60,7 +59,6 @@ private:
 
     // Heightfield2 Private Data
     float   min_z,max_z;
-    int     width,height,depth;
     float   *z;
     int     nx, ny;
     Normal  *vertexNormals;
@@ -68,7 +66,6 @@ private:
     int     nVoxels[3]; // stores [nx-1,ny-1,1], number of voxels in each dimension
     Vector  voxelwidth;
     BBox    bounds;
-    //float	*uvs;
 
     int pos2Voxel(const Point &P, int axis) const {
         if (axis == 2) return 0;
@@ -79,11 +76,7 @@ private:
         return Clamp(v, 0, nVoxels[axis]);
     }
     float voxel2Pos(int p, int axis) const {
-        return (float)p / (float)(nVoxels[axis]);
-    }
-    float getZ(int x, int y) const {
-    	//return z[ x*ny + y ];
-    	return z[ y*nx + x];
+        return p / (float)(nVoxels[axis]);
     }
 
 };
@@ -95,4 +88,3 @@ Heightfield2 *CreateHeightfield2Shape(const Transform *o2w, const Transform *w2o
 //        bool reverseOrientation, const ParamSet &params);
 
 #endif // PBRT_SHAPES_HEIGHTFIELD2_H
-
