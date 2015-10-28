@@ -67,6 +67,7 @@ private:
     int     nVoxels[3]; // stores [nx-1,ny-1,1], number of voxels in each dimension
     Vector  voxelwidth;
     BBox    bounds;
+    float	*uvs;
 
     int pos2Voxel(const Point &P, int axis) const {
         if (axis == 2) return 0;
