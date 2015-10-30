@@ -54,8 +54,8 @@ public:
   	void GetShadingGeometry(const Transform &obj2world, const DifferentialGeometry &dg, DifferentialGeometry *dgShading) const;
 private:
 	  void InitVertexNormals();
-    bool TriangleIntersect(Ray &r, float *rayEpsilon, Point *triangle, Normal *normals, float *tHit, DifferentialGeometry *dg) const;
-    bool TriangleIntersectP(Ray &r, Point *triangle) const;
+    bool TriangleIntersect(const Ray &r, Intersection *instect, const Point *triangle, const Normal *normals, float *tHit) const;
+    bool TriangleIntersectP(const Ray &r, const Point *triangle) const;
 
     // Heightfield2 Private Data
     float   min_z,max_z;
