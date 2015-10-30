@@ -62,15 +62,8 @@ Heightfield2::Heightfield2(
 //	BBox bounds = BBox(Point(0,0,min_z), Point(1,1,max_z));
 //	Vector _delta = bounds.pMax - bounds.pMin;
 //	voxelwidth = Vector(_delta[0]/width, _delta[1]/height, 0.0f);
-
-
-
-
-
-//	voxelwidth = Vector(1.f/width, 1.f/height, 0.0f);
-	voxelwidth[0] = 1.f/nx;
-	voxelwidth[1] = 1.f/ny;
-	voxelwidth[2] = 0;
+	
+	voxelwidth = Vector(1.f/nx, 1.f/ny, 0.0f);
 
     nVoxels[0] = nx -1;
     nVoxels[1] = ny -1;
@@ -225,7 +218,8 @@ void Heightfield2::InitVertexNormals() {
 													Cross( (p[6]-p[4]) ,(p[3]-p[4]) ) + \
 													Cross( (p[3]-p[4]) ,(p[0]-p[4]) )
 													)
-												);
+												)*(-1);
+			printf("z:%2.5f    ",vertexNormals[i+j*nx].x,vertexNormals[i+j*nx].y,vertexNormals[i+j*nx].z);
 
 		}
 	}
@@ -546,24 +540,25 @@ bool Heightfield2::TriangleIntersect(const Ray &r, Intersection *instect, const 
       float du2 = uvs[1][0] - uvs[2][0];
       float dv1 = uvs[0][1] - uvs[2][1];
       float dv2 = uvs[1][1] - uvs[2][1];*/
-//    float du1 = uvs[0] - uvs[4];
-//    float du2 = uvs[2] - uvs[4];
-//    float dv1 = uvs[1] - uvs[5];
-//    float dv2 = uvs[3] - uvs[5];
-//    Vector dp1 = p1 - p3, dp2 = p2 - p3;
-//
-//    float determinant = du1 * dv2 - dv1 * du2;
-//    if (determinant == 0.f) {
-//        // Handle zero determinant for triangle partial derivative matrix
-//        CoordinateSystem(Normalize(Cross(e2, e1)), &dpdu, &dpdv);
-//    }
-//    else {
-//        float invdet = 1.f / determinant;
-//        dpdu = ( dv2 * dp1 - dv1 * dp2) * invdet;
-//        dpdv = (-du2 * dp1 + du1 * dp2) * invdet;
-//    }
+    float du1 = uvs[0] - uvs[4];
+    float du2 = uvs[2] - uvs[4];
+    float dv1 = uvs[1] - uvs[5];
+    float dv2 = uvs[3] - uvs[5];
+    Vector dp1 = p1 - p3, dp2 = p2 - p3;
+
+    float determinant = du1 * dv2 - dv1 * du2;
+    if (determinant == 0.f) {
+        // handle zero determinant for triangle partial derivative matrix
+        CoordinateSystem(Normalize(Cross(e2, e1)), &dpdu, &dpdv);
+    }
+    else {
+        float invdet = 1.f / determinant;
+        dpdu = ( dv2 * dp1 - dv1 * dp2) * invdet;
+        dpdv = (-du2 * dp1 + du1 * dp2) * invdet;
+    }
 
 	// manipulate the normal
+	/*
 	Vector normal00= Vector(normals[0]);
 	Vector normal01= Vector(normals[1]);
 	Vector normal02= Vector(normals[2]);
@@ -577,6 +572,7 @@ bool Heightfield2::TriangleIntersect(const Ray &r, Intersection *instect, const 
 
 	dpdu = temp_tangent;
 	dpdv = temp_surface;
+	*/
 
     // Fill in _DifferentialGeometry_ from triangle hit
     instect->dg = DifferentialGeometry( ray(t),
