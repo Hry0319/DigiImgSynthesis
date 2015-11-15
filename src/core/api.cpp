@@ -49,6 +49,7 @@
 #include "cameras/environment.h"
 #include "cameras/orthographic.h"
 #include "cameras/perspective.h"
+#include "cameras/realistic.h" //Rendering Class 2015 Hw2
 #include "film/image.h"
 #include "filters/box.h"
 #include "filters/gaussian.h"
@@ -615,6 +616,8 @@ Camera *MakeCamera(const string &name,
         camera = CreateOrthographicCamera(paramSet, animatedCam2World, film);
     else if (name == "environment")
         camera = CreateEnvironmentCamera(paramSet, animatedCam2World, film);
+    else if(name == "realistic" )
+        camera = CreateRealisticCamera(paramSet, animatedCam2World, film);
     else
         Warning("Camera \"%s\" unknown.", name.c_str());
     paramSet.ReportUnused();
