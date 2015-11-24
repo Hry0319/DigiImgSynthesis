@@ -108,7 +108,7 @@ static void lvMotion(int x, int y) {
 	}
 	// Here we handle zooming
 	if (lvPressed[GLUT_RIGHT_BUTTON]) {
-	    float zoom = 4.0f * float(x - lastx) / lvWidth;
+	    float zoom = 3.0f * float(x - lastx) / lvWidth;
 	    if ((lvZoom + zoom) >= 1.0f)
 			lvZoom += zoom;
 	}

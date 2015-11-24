@@ -12,6 +12,16 @@ RealisticCamera::RealisticCamera(const AnimatedTransform &cam2world,
 {
    // YOUR CODE HERE -- build and store datastructures representing the given lens
    // and film placement.
+	lens.specfile			= specfile;	
+	lens.filmdistance		= filmdistance;
+	lens.aperture_diameter	= aperture_diameter;
+	lens.filmdiag			= filmdiag;
+	lens.hither				= hither;		
+	lens.yon				= yon;		
+	lens.shutteropen		= sopen;
+	lens.shutterclose		= sclose;
+
+
 }
 
 float RealisticCamera::GenerateRay(const CameraSample &sample, Ray *ray) const {
@@ -20,7 +30,13 @@ float RealisticCamera::GenerateRay(const CameraSample &sample, Ray *ray) const {
   // use sample->imageX and sample->imageY to get raster-space coordinates
   // of the sample point on the film.
   // use sample->lensU and sample->lensV to get a sample position on the lens
-   return 0;
+	
+	Point Pras(sample.imageX, sample.imageY, 0);
+	Point Pcamera;
+	//RasterToCamera(Pras, &Pcamera);
+
+
+	return 0;
 }
 
 

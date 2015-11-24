@@ -1,20 +1,25 @@
-﻿已經開始建置於 2015/11/24 上午 02:25:57。
-     1>節點 2 (build 目標) 上的專案 "C:\RENDERING\mypbrt\DigiImgSynthesis\src\lensview\lensview.vcxproj"。
+﻿已經開始建置於 2015/11/24 上午 11:48:33。
+     1>節點 2 (build 目標) 上的專案 "C:\RENDERING\mypbrt\DigiImgSynthesis\src\lensview_win64\lensview.vcxproj"。
      1>InitializeBuildStatus:
-         正在變更時間戳記 "Release\lensview.unsuccessfulbuild"。
+         由於指定了 "AlwaysCreate"，因此正在建立 "Release\lensview.unsuccessfulbuild"。
        ClCompile:
-         所有輸出都是最新的。
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\x86_amd64\CL.exe /c /Zi /nologo /W3 /WX- /O2 /D WIN32 /D NDEBUG /D _CONSOLE /D _MBCS /Gm- /EHsc /MT /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc100.pdb" /Gd /TP /errorReport:prompt lensdata.cpp lensview.cpp
+         lensdata.cpp
+         lensview.cpp
+     1>lensview.cpp(21): warning C4996: 'vsprintf': This function or variable may be unsafe. Consider using vsprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : 請參閱 'vsprintf' 的宣告
+         Generating Code...
        Link:
-         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:".\lensview.exe" /INCREMENTAL:NO /NOLOGO freeglut.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:"Release\lensview.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"C:\RENDERING\mypbrt\DigiImgSynthesis\src\lensview\lensview.pdb" /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\lensview.lib" /MACHINE:X64 Release\lensdata.obj
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:".\lensview.exe" /INCREMENTAL:NO /NOLOGO freeglut.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:"Release\lensview.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"C:\RENDERING\mypbrt\DigiImgSynthesis\src\lensview_win64\lensview.pdb" /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\lensview.lib" /MACHINE:X64 Release\lensdata.obj
          Release\lensview.obj
-         lensview.vcxproj -> C:\RENDERING\mypbrt\DigiImgSynthesis\src\lensview\.\lensview.exe
+         lensview.vcxproj -> C:\RENDERING\mypbrt\DigiImgSynthesis\src\lensview_win64\.\lensview.exe
        Manifest:
          C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /outputresource:".\lensview.exe;#1" /manifest Release\lensview.exe.intermediate.manifest
        FinalizeBuildStatus:
          正在刪除檔案 "Release\lensview.unsuccessfulbuild"。
          正在變更時間戳記 "Release\lensview.lastbuildstate"。
-     1>專案 "C:\RENDERING\mypbrt\DigiImgSynthesis\src\lensview\lensview.vcxproj" (build 目標) 建置完成。
+     1>專案 "C:\RENDERING\mypbrt\DigiImgSynthesis\src\lensview_win64\lensview.vcxproj" (build 目標) 建置完成。
 
 建置成功。
 
-經過時間 00:00:00.44
+經過時間 00:00:02.17

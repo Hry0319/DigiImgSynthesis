@@ -6,6 +6,7 @@
 #ifndef PBRT_CAMERAS_REALISTIC_H
 #define PBRT_CAMERAS_REALISTIC_H
 
+#include "pbrt.h"
 #include "camera.h"
 #include "paramset.h"
 #include "film.h"
@@ -22,7 +23,22 @@ public:
   
 private:
 	// RealisticCamera Public Methods
-
+	struct Lens{
+		// Realistic camera-specific parameters
+		string	specfile;	
+		float	filmdistance;
+		float	aperture_diameter;
+		float	filmdiag;
+		// Extract common camera parameters from \use{ParamSet}
+		float	hither;		
+		float	yon;			
+		float   shutteropen;	
+		float	shutterclose;	
+	} lens;
+    float lens_radius;
+    float z_axis_intercept;
+    float index_of_refraction;
+    float aperture;
 };
 
 
