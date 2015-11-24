@@ -10,10 +10,32 @@
 #include "camera.h"
 #include "paramset.h"
 #include "film.h"
+#include <vector>
+
+struct SceneCamera {
+	// Realistic camera-specific parameters
+	string	specfile;	
+	float	filmdistance;
+	float	aperture_diameter;
+	float	filmdiag;
+	// Extract common camera parameters from \use{ParamSet}
+	float	hither;		
+	float	yon;			
+	float   shutteropen;	
+	float	shutterclose;	
+};
+class Lens {
+public:
+    float lens_radius;
+    float z_axis_intercept;
+    float index_of_refraction;
+    float aperture;
+};
 
 // RealisticCamera Declarations
 class RealisticCamera : public Camera {
 public:
+
 	// RealisticCamera Public Methods
 	RealisticCamera(const AnimatedTransform &cam2world,
 						float hither, float yon, float sopen,
@@ -22,23 +44,12 @@ public:
 	float GenerateRay(const CameraSample &sample, Ray *) const;
   
 private:
+    SceneCamera     scenecam;
+    vector<Lens>    lens;
+
 	// RealisticCamera Public Methods
-	struct Lens{
-		// Realistic camera-specific parameters
-		string	specfile;	
-		float	filmdistance;
-		float	aperture_diameter;
-		float	filmdiag;
-		// Extract common camera parameters from \use{ParamSet}
-		float	hither;		
-		float	yon;			
-		float   shutteropen;	
-		float	shutterclose;	
-	} lens;
-    float lens_radius;
-    float z_axis_intercept;
-    float index_of_refraction;
-    float aperture;
+    void ParseLens(const string& filename);
+    
 };
 
 

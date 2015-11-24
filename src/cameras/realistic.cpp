@@ -1,7 +1,12 @@
 
 #include "stdafx.h"
 #include "cameras/realistic.h"
-
+#include <stdio.h>
+#include <iostream> 
+#include <fstream>
+#include <algorithm>
+//#include <string>
+using namespace std; 
 
 RealisticCamera::RealisticCamera(const AnimatedTransform &cam2world,
 				 float hither, float yon, 
@@ -12,15 +17,21 @@ RealisticCamera::RealisticCamera(const AnimatedTransform &cam2world,
 {
    // YOUR CODE HERE -- build and store datastructures representing the given lens
    // and film placement.
-	lens.specfile			= specfile;	
-	lens.filmdistance		= filmdistance;
-	lens.aperture_diameter	= aperture_diameter;
-	lens.filmdiag			= filmdiag;
-	lens.hither				= hither;		
-	lens.yon				= yon;		
-	lens.shutteropen		= sopen;
-	lens.shutterclose		= sclose;
-
+	//scenecam.specfile			= specfile;	
+	//scenecam.filmdistance		= filmdistance;
+	//scenecam.aperture_diameter	= aperture_diameter;
+	//scenecam.filmdiag			= filmdiag;
+	//scenecam.hither				= hither;		
+	//scenecam.yon				= yon;		
+	//scenecam.shutteropen		= sopen;
+	//scenecam.shutterclose		= sclose;
+    
+   
+    printf("Read pbrt ___________________________ %s\n", specfile.c_str());
+	if (specfile.compare("") != 0)  {
+        ParseLens(specfile);
+    }
+    
 
 }
 
@@ -31,14 +42,36 @@ float RealisticCamera::GenerateRay(const CameraSample &sample, Ray *ray) const {
   // of the sample point on the film.
   // use sample->lensU and sample->lensV to get a sample position on the lens
 	
-	Point Pras(sample.imageX, sample.imageY, 0);
-	Point Pcamera;
+	//Point Pras(sample.imageX, sample.imageY, 0);
+	//Point Pcamera;
 	//RasterToCamera(Pras, &Pcamera);
 
 
 	return 0;
 }
 
+void RealisticCamera::ParseLens(const string& filename)  {
+    ifstream specfile(filename.c_str());
+    if (!specfile) {
+        fprintf(stderr, "Cannot open file %s\n", filename.c_str());
+        exit (-1);
+    }
+
+    char line[512];
+    //int index;
+    while (!specfile.eof()) {
+        specfile.getline(line, 512);
+        if (line[0] != '\0' && line[0] != '#' &&
+            line[0] != ' ' && line[0] != '\t' && line[0] != '\n')
+        {
+		    lens.resize(lens.size()+1);
+		    Lens& len = lens[lens.size()-1];
+            sscanf(line, "%f %f %f %f\n", len.aperture, len.index_of_refraction, len.lens_radius, len.z_axis_intercept);
+        }
+    }
+
+    //printf("Read in %zu lens from %s\n", lens.size(), filename.c_str());
+}
 
 RealisticCamera *CreateRealisticCamera(const ParamSet &params,
         const AnimatedTransform &cam2world, Film *film) {
