@@ -4,9 +4,8 @@
 #include <stdio.h>
 #include <iostream> 
 #include <fstream>
-#include <algorithm>
-//#include <string>
 using namespace std; 
+
 
 RealisticCamera::RealisticCamera(const AnimatedTransform &cam2world,
 				 float hither, float yon, 
@@ -26,12 +25,15 @@ RealisticCamera::RealisticCamera(const AnimatedTransform &cam2world,
 	//scenecam.shutteropen		= sopen;
 	//scenecam.shutterclose		= sclose;
     
-   
-    printf("Read pbrt ___________________________ %s\n", specfile.c_str());
-	if (specfile.compare("") != 0)  {
-        ParseLens(specfile);
+   //current_path();
+    TCHAR s[100];
+    DWORD a = GetCurrentDirectory(100, s);
+	if (specfile.compare("") != 0)  {        
+        ParseLens("C:\\RENDERING\\HW3\\project2_template\\"+specfile);
     }
-    
+    for (int i=0;i<lens.size();i++){
+        printf("%d : [ %5.5f %5.5f %5.5f %5.5f ] \n", i, lens[i].aperture,lens[i].index_of_refraction,lens[i].lens_radius,lens[i].z_axis_intercept);
+    }
 
 }
 
@@ -57,8 +59,8 @@ void RealisticCamera::ParseLens(const string& filename)  {
         exit (-1);
     }
 
-    char line[512];
-    //int index;
+    char    line[512];
+    int     index = 0;
     while (!specfile.eof()) {
         specfile.getline(line, 512);
         if (line[0] != '\0' && line[0] != '#' &&
@@ -66,11 +68,11 @@ void RealisticCamera::ParseLens(const string& filename)  {
         {
 		    lens.resize(lens.size()+1);
 		    Lens& len = lens[lens.size()-1];
-            sscanf(line, "%f %f %f %f\n", len.aperture, len.index_of_refraction, len.lens_radius, len.z_axis_intercept);
+            sscanf(line, "%f %f %f %f\n", &len.aperture, &len.index_of_refraction, &len.lens_radius, &len.z_axis_intercept);
         }
     }
 
-    //printf("Read in %zu lens from %s\n", lens.size(), filename.c_str());
+    printf("Read in %Iu lens from %s\n", lens.size(), filename.c_str());
 }
 
 RealisticCamera *CreateRealisticCamera(const ParamSet &params,
