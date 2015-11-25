@@ -1,0 +1,21 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lensview", "lensview.vcproj", "{12CB1D4D-EE4D-4084-BD92-22D412DD666B}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{12CB1D4D-EE4D-4084-BD92-22D412DD666B}.Debug.ActiveCfg = Debug|Win32
+		{12CB1D4D-EE4D-4084-BD92-22D412DD666B}.Debug.Build.0 = Debug|Win32
+		{12CB1D4D-EE4D-4084-BD92-22D412DD666B}.Release.ActiveCfg = Release|Win32
+		{12CB1D4D-EE4D-4084-BD92-22D412DD666B}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

@@ -12,6 +12,10 @@
 #include "film.h"
 #include <vector>
 
+#define IN
+#define OUT
+
+
 struct SceneCamera {
 	// Realistic camera-specific parameters
 	string	specfile;	
@@ -27,8 +31,8 @@ struct SceneCamera {
 class Lens {
 public:
     float lens_radius;
-    float z_axis_intercept;
-    float index_of_refraction;
+    float axpos;
+    float N;
     float aperture;
 };
 
@@ -46,9 +50,15 @@ public:
 private:
     SceneCamera     scenecam;
     vector<Lens>    lens;
+	double          SumofThick;
+
+	double			Xres;
+	double			Yres;
+	double          ScaleRate;
 
 	// RealisticCamera Public Methods
     void ParseLens(const string& filename);
+	void RasterToScreen(IN const Point Praster, OUT Point *Pscreen) const;
     
 };
 
