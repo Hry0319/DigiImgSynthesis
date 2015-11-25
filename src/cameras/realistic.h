@@ -30,6 +30,7 @@ struct SceneCamera {
 };
 class Lens {
 public:
+    unsigned int lensIndex;
     float lens_radius;
     float axpos;
     float N;
@@ -48,13 +49,14 @@ public:
 	float GenerateRay(const CameraSample &sample, Ray *) const;
   
 private:
+    Transform       RasterToCamera;
     SceneCamera     scenecam;
     vector<Lens>    lens;
 	double          SumofThick;
-
 	double			Xres;
 	double			Yres;
 	double          ScaleRate;
+
 
 	// RealisticCamera Public Methods
     void ParseLens(const string& filename);
