@@ -38,15 +38,10 @@ RealisticCamera::RealisticCamera(const AnimatedTransform &cam2world,
 	if (specfile.compare("") != 0)  {        
         ParseLens("C:\\RENDERING\\HW3\\project2_template\\"+specfile);
     }
- //   for (int i=0;i<lens.size();i++){
- //       printf("%d : [ %5.5f %5.5f %5.5f %5.5f ] \n", i, lens[i].lens_radius, lens[i].axpos, lens[i].N, lens[i].aperture);
- //   }
-	//printf("SumofThick = %f \n", SumofThick);    
 
     // Assume the origin of the camera system is at the front lens
     RasterToCamera = Scale(-1,1,1) * // fix the issue of horizontal flipping
-                   Translate(Vector(-1*Xres*ScaleRate/2, -1*Yres*ScaleRate/2, -1*filmdistance)) * 
-                   Scale(ScaleRate, ScaleRate, 1.0f);
+                   Translate(Vector(-1*Xres*ScaleRate/2, -1*Yres*ScaleRate/2, -1*(filmdistance+SumofThick) )) * Scale(ScaleRate, ScaleRate, 1.0f);
 }
 
 
@@ -61,112 +56,94 @@ float RealisticCamera::GenerateRay(const CameraSample &sample, Ray *ray) const {
 	Point P_ras(sample.imageX, sample.imageY, 0);
 	Point P_screen;
 	//RasterToCamera(Pras, &Pcamera);
-	RasterToScreen(P_ras, &P_screen);
-	P_screen.x *= -1;
+	//RasterToScreen(P_ras, &P_screen);
+    RasterToCamera(P_ras, &P_screen);
+	//P_screen.x *= -1;
 	//P_screen.y *= -1;
-	P_screen.z  = -1*(SumofThick+scenecam.filmdistance);
+	//P_screen.z  = -1*(SumofThick+scenecam.filmdistance);
 
-	float lensU, lensV;
-	ConcentricSampleDisk(sample.lensU, sample.lensV, &lensU, &lensV);	
+	float lensU, lensV;    
+    ConcentricSampleDisk(sample.lensU, sample.lensV, &lensU, &lensV);
     lensU *= lens.back().aperture/2;
 	lensV *= lens.back().aperture/2;    
 
-    double _d = sqrt( lens.back().lens_radius*lens.back().lens_radius - sqrt( lensU*lensU + lensV*lensV ) );
+    double _d = sqrt( lens.back().radius*lens.back().radius - sqrt( lensU*lensU + lensV*lensV ) );
     float initRayZ = 0;
-    if (lens.back().lens_radius > 0)
+    if (lens.back().radius > 0)
     {
-        initRayZ = -1*SumofThick - lens.back().lens_radius - _d;
+        initRayZ = -1*SumofThick - lens.back().radius - _d;
     } else {
-        initRayZ = -1*SumofThick + lens.back().lens_radius - _d;
+        initRayZ = -1*SumofThick + lens.back().radius - _d;
     }
 	Point FirstSamplePoint (lensU, lensV, initRayZ);
-    *ray = Ray(P_screen, Normalize(Vector(FirstSamplePoint - P_screen)), 0.f, INFINITY);
+    //*ray = Ray(P_screen, Normalize(Vector(FirstSamplePoint - P_screen)), 0.f, INFINITY);
+    ray->d = Normalize(Vector(FirstSamplePoint - P_screen));
+    ray->o = P_screen;
     ray->time = Lerp(sample.time, shutterOpen, shutterClose);
+
     
 	
     // Trace the ray through all the lens surfaces
     Point P_hit;
 	double thickLen = -1*SumofThick;
-	for ( int index = lens.size()-1; index >= 0; index--){    
-        Ray r = *ray;
-        thickLen+=lens[index].axpos;
-        //
-        // intersection on a sphere
-        //
-        Vector IntersectNormal;
-        if (lens[index].lens_radius != 0) {
-		    float thit = 0;	
-		    Vector w2oV(0.f, 0.f, lens[index].lens_radius - thickLen);
-		    Transform   o2w = Translate(-1*w2oV), 
-			            w2o = Translate( 1*w2oV);
-            
-		    Sphere sphere(&o2w, &w2o, false, fabs(lens[index].lens_radius), -1*lens[index].lens_radius, lens[index].lens_radius, 360);
-
-		    float rayEpsilon;
-		    DifferentialGeometry dg;
-            CameraToWorld(r, &r);
-		    if (!sphere.Intersect(r, &thit, &rayEpsilon, &dg)) return 0.f;
-		    //if (thit > r.maxt || thit < r.mint) return 0.f;
-            //w2o(r, &r);
-		    P_hit = (*ray)(thit);
-	    }
-        else
-        {            
-		    // using absolute value because ray can come from either side
-		    float scale = fabs((thickLen - r.o.z)/r.d.z);
-		    P_hit = r.o + scale*r.d; 
-        }       
-	    // aperture
-	    if ( (P_hit.x * P_hit.x + P_hit.y * P_hit.y) >= (lens[index].aperture*lens[index].aperture)/4) 
-        {
-            return 0.f;
+	for ( int index = lens.size()-1; index >= 0; index--){  
+        if (lens[index].N == 0) {
+          // Find intersection (ray-disk)
+          float t = (lens[index].lensCenterZ - ray->o.z) / ray->d.z;
+          float x = ray->o.x + t * ray->d.x;
+          float y = ray->o.y + t * ray->d.y;
+          if (x * x + y * y > lens[index].aperture*lens[index].aperture) return 0.0f;
+        } else {
+          // Find the intersection point, a.k.a. P_hit
+          {
+            Vector co = ray->o - Point(0.0f, 0.0f, lens[index].lensCenterZ);
+            float c = co.LengthSquared();
+            float d = Dot(co, ray->d);
+            float e = d * d - c + lens[index].radius*lens[index].radius;
+            if (e < 0.0f) return 0.0f;
+            float t = ((lens[index].radius > 0.0f) ? (-d + sqrtf(e)) : (-d - sqrtf(e)));
+            P_hit = ray->o + t * ray->d;
+            if (P_hit.x*P_hit.x + P_hit.y*P_hit.y > lens[index].aperture*lens[index].radius)
+              return 0.0f;
+          }
+      
+          // get normal vector on the intersection point
+          Vector normal;
+          if (lens[index].radius > 0.0f)
+            normal = Normalize(Point(0.0f, 0.0f, lens[index].lensCenterZ) - P_hit);
+          else
+            normal = Normalize(P_hit - Point(0.0f, 0.0f, lens[index].lensCenterZ));
+      
+          Vector input = ray->d, output;
+      
+          // Heckber's method
+          {
+            float c1, c2;
+            c1 = -Dot(input, normal);
+            c2 = 1.0f - lens[index].n_ratio2 * (1.0f - c1 * c1);
+            if (c2 < 0.0f) return 0.0f;
+            c2 = sqrtf(c2);
+            output = lens[index].n_ratio * input + (lens[index].n_ratio * c1 - c2) * normal;
+          }
+      
+          // next!
+          ray->o = P_hit;
+          ray->d = Normalize(output);
         }
-        IntersectNormal = Normalize(P_hit - Point(0, 0, thickLen - lens[index].lens_radius));
-        
-
-        // assert the aperture is in air
-		if (lens[index].lens_radius == 0) {
-			assert(lens[index].N == 1.f);
-			assert(lens[index-1].N == 1.f);
-		}
-
-
-        // update ray direction
-		Vector newD;
-		float n2 = (index==0)? 1 : lens[index-1].N;
-		// flipping normal direction if radius is positive
-		// so that the normal will always be on the same side as the incident ray
-		if (lens[index].lens_radius * ray->d.z > 0) 
-			IntersectNormal *= -1;
-		
-		if (!SnellsLaw(ray->d, IntersectNormal, lens[index].N, n2, &newD)) {
-			//cout << "total internal reflection" << endl;
-			return 0.f;
-		} 
-		
-		*ray = Ray(P_hit, Normalize(newD), 0.f, INFINITY, ray->time);
 	}
     
-	ray->time = Lerp(sample.time, shutterOpen, shutterClose);
+    ray->mint = scenecam.hither;
+    ray->maxt = (scenecam.yon - scenecam.hither) / ray->d.z;
     CameraToWorld(*ray, ray);
-	ray->d = Normalize(ray->d);
+	//ray->d = Normalize(ray->d);
 
-
-
-
- //   // GenerateRay() should return the weight of the generated ray
-	//// E = A*cos^4(theta)/Z^2 
-	//double A = M_PI* pow(lens.back().aperture/2, 2);
- //   double Z = lens.back().axpos;
- //   double costheta = Dot(ray->d, Vector(0,0,1));    
- //   double E = A*pow(costheta,4) /(Z*Z);
     
     // BONUS: varying pixel weight
-    //float weight = Dot(Normalize(ray->d),Vector(0,0,1));
-    //weight = weight * weight / fabsf(P_screen.z);
-    //weight = weight * weight * (lens.back().aperture*lens.back().aperture * M_PI);
+    float weight = Dot(Normalize(P_hit-P_screen),Vector(0,0,1));
+    weight = weight * weight / fabsf(SumofThick + scenecam.filmdistance);
+    weight = weight * weight * (lens.back().radius*lens.back().radius * M_PI);
   
-    return 1.f;
+    return weight;
 }
 
 bool RealisticCamera::SnellsLaw(Vector s1, Vector N, float n1, float n2, Vector *s2) const {
@@ -200,7 +177,6 @@ void RealisticCamera::ParseLens(const string& filename)  {
     }
 
     char    line[512];
-    int     index = 0;
     while (!specfile.eof()) {
         specfile.getline(line, 512);
         if (line[0] != '\0' && line[0] != '#' &&
@@ -208,12 +184,33 @@ void RealisticCamera::ParseLens(const string& filename)  {
         {
 		    lens.resize(lens.size()+1);
 		    Lens& len = lens[lens.size()-1];
-            sscanf(line, "%f %f %f %f\n", &len.lens_radius, &len.axpos, &len.N, &len.aperture);
+            sscanf(line, "%f %f %f %f\n", &len.radius, &len.axpos, &len.N, &len.aperture);
 			SumofThick+=len.axpos;
+            len.lensZoffset-=len.axpos;
+            len.lensCenterZ = len.lensZoffset+len.radius;
         }
     }
 
-    printf("Read in %Iu lens from %s\n", lens.size(), filename.c_str());
+    //printf("Read in %Iu lens from %s\n", lens.size(), filename.c_str());
+
+    
+	for ( int index = lens.size()-1; index >= 0; index--)
+    {
+        if (lens[index].N==0)
+            lens[index].n_ratio = 1.0f;
+        else {
+            Lens len2;
+            if (index-1 >= 0)
+                Lens len2 = lens[index-1];
+            else
+                len2.N = 0.0f;
+            if (index-1 == 0 || len2.N == 0.0f)
+                lens[index].n_ratio = lens[index].N;
+            else
+                lens[index].n_ratio = lens[index].N / len2.N;
+        }
+        lens[index].n_ratio2 = lens[index].n_ratio * lens[index].n_ratio;
+    }
 }
 
 

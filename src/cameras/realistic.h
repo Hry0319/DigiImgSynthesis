@@ -30,11 +30,15 @@ struct SceneCamera {
 };
 class Lens {
 public:
-    unsigned int lensIndex;
-    float lens_radius;
+    float radius;
     float axpos;
     float N;
     float aperture;
+
+    float lensZoffset;
+    float lensCenterZ;
+
+    float n_ratio,n_ratio2;
 };
 
 // RealisticCamera Declarations
