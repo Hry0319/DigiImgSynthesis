@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <iostream> 
 #include <fstream>
+#include "shapes/sphere.h"
 
 using namespace std; 
 
@@ -81,45 +82,114 @@ float RealisticCamera::GenerateRay(const CameraSample &sample, Ray *ray) const {
 	Point FirstSamplePoint (lensU, lensV, initRayZ);
     *ray = Ray(P_screen, Normalize(Vector(FirstSamplePoint - P_screen)), 0.f, INFINITY);
     ray->time = Lerp(sample.time, shutterOpen, shutterClose);
-
+    
 	
-	//double thickLen = -1*SumofThick;
-	//for ( int index = lens.size()-1; index >= 0; index--){
-	//	//// Modify ray for depth of field
-	//	if (lens[index].lens_radius > 0.) {
-	//		// Sample point on lens
-	//		float lensU, lensV;
-	//		ConcentricSampleDisk(sample.lensU, sample.lensV, &lensU, &lensV);
-	//		lensU *= (lens[index].aperture/2);
-	//		lensV *= (lens[index].aperture/2);
+    // Trace the ray through all the lens surfaces
+    Point P_hit;
+	double thickLen = -1*SumofThick;
+	for ( int index = lens.size()-1; index >= 0; index--){    
+        Ray r = *ray;
+        thickLen+=lens[index].axpos;
+        //
+        // intersection on a sphere
+        //
+        Vector IntersectNormal;
+        if (lens[index].lens_radius != 0) {
+		    float thit = 0;	
+		    Vector w2oV(0.f, 0.f, lens[index].lens_radius - thickLen);
+		    Transform   o2w = Translate(-1*w2oV), 
+			            w2o = Translate( 1*w2oV);
+            
+		    Sphere sphere(&o2w, &w2o, false, fabs(lens[index].lens_radius), -1*lens[index].lens_radius, lens[index].lens_radius, 360);
 
-	//		double _d = sqrt( lens[index].lens_radius*lens[index].lens_radius - sqrt( lensU*lensU + lensV*lensV ) );
-	//		Point Rayway(lensU, lensV, thickLen-lens[index].lens_radius+_d);
+		    float rayEpsilon;
+		    DifferentialGeometry dg;
+            CameraToWorld(r, &r);
+		    if (!sphere.Intersect(r, &thit, &rayEpsilon, &dg)) return 0.f;
+		    //if (thit > r.maxt || thit < r.mint) return 0.f;
+            //w2o(r, &r);
+		    P_hit = (*ray)(thit);
+	    }
+        else
+        {            
+		    // using absolute value because ray can come from either side
+		    float scale = fabs((thickLen - r.o.z)/r.d.z);
+		    P_hit = r.o + scale*r.d; 
+        }       
+	    // aperture
+	    if ( (P_hit.x * P_hit.x + P_hit.y * P_hit.y) >= (lens[index].aperture*lens[index].aperture)/4) 
+        {
+            return 0.f;
+        }
+        IntersectNormal = Normalize(P_hit - Point(0, 0, thickLen - lens[index].lens_radius));
+        
 
-	//		// Compute point on plane of focus
-	//		//float ft = focaldistance / ray->d.z;
-	//		//Point Pfocus = (*ray)(ft);
+        // assert the aperture is in air
+		if (lens[index].lens_radius == 0) {
+			assert(lens[index].N == 1.f);
+			assert(lens[index-1].N == 1.f);
+		}
 
-	//		// Update ray for effect of lens
-	//		ray->o = Point(lensU, lensV, 0.f);
-	//		ray->d = Normalize(Rayway - ray->o);
-	//		//ray->o = Point(lensU, lensV, 0.f);
-	//		
-	//		thickLen += lens[index].axpos;
-	//	}
-	//}
 
+        // update ray direction
+		Vector newD;
+		float n2 = (index==0)? 1 : lens[index-1].N;
+		// flipping normal direction if radius is positive
+		// so that the normal will always be on the same side as the incident ray
+		if (lens[index].lens_radius * ray->d.z > 0) 
+			IntersectNormal *= -1;
+		
+		if (!SnellsLaw(ray->d, IntersectNormal, lens[index].N, n2, &newD)) {
+			//cout << "total internal reflection" << endl;
+			return 0.f;
+		} 
+		
+		*ray = Ray(P_hit, Normalize(newD), 0.f, INFINITY, ray->time);
+	}
+    
+	ray->time = Lerp(sample.time, shutterOpen, shutterClose);
     CameraToWorld(*ray, ray);
 	ray->d = Normalize(ray->d);
 
-	return 1.f;
+
+
+
+ //   // GenerateRay() should return the weight of the generated ray
+	//// E = A*cos^4(theta)/Z^2 
+	//double A = M_PI* pow(lens.back().aperture/2, 2);
+ //   double Z = lens.back().axpos;
+ //   double costheta = Dot(ray->d, Vector(0,0,1));    
+ //   double E = A*pow(costheta,4) /(Z*Z);
+    
+    // BONUS: varying pixel weight
+    //float weight = Dot(Normalize(ray->d),Vector(0,0,1));
+    //weight = weight * weight / fabsf(P_screen.z);
+    //weight = weight * weight * (lens.back().aperture*lens.back().aperture * M_PI);
+  
+    return 1.f;
+}
+
+bool RealisticCamera::SnellsLaw(Vector s1, Vector N, float n1, float n2, Vector *s2) const {
+
+	float mu = n1/n2;
+	
+	float costheta = Dot(-1*s1, N); // note normal is pointing in opposite direction of s1
+	float toSqrt = 1 - mu*mu* ( 1- costheta*costheta);
+	
+	if (toSqrt < 0) return false; // total internal reflection
+
+	int sign = 1;
+	if (costheta < 0) sign = -1;
+
+	float gamma = mu*costheta - sign*sqrtf(toSqrt); 
+
+	*s2 = mu*s1 + gamma*N;
+	return true;
 }
 
 void RealisticCamera::RasterToScreen(IN const Point Praster, OUT Point *P_screen) const {
 	P_screen->x = (Praster.x  - (Xres/2) ) * ScaleRate;
 	P_screen->y = (Praster.y  - (Yres/2) ) * ScaleRate;
-
-	return;
 }
 
 void RealisticCamera::ParseLens(const string& filename)  {
