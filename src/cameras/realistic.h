@@ -61,10 +61,10 @@ private:
 	float			RasterDiag;
 
 	// RealisticCamera Public Methods
-    void ParseLens(const string& filename);
-	void RealisticCamera::RasterToScreen(const Point SamplePraster,  Point *P_camera);
+    void  ParseLens(const string& filename);
+	void  RasterToScreen(IN const Point Praster, OUT Point *P_camera) const;
 	float RasterToCamera(float in, int dim) const;
-    bool SnellsLaw(Vector s1, Vector N, float n1, float n2, Vector *s2) const;
+    bool  SnellsLaw(Vector s1, Vector N, float n1, float n2, Vector *s2) const;
 };
 
 
