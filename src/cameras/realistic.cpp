@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <iostream> 
 #include <fstream>
+#include "shapes/sphere.h"
 
 using namespace std; 
 
@@ -16,8 +17,6 @@ RealisticCamera::RealisticCamera(const AnimatedTransform &cam2world,
 				 float filmdiag, Film *f)
 	: Camera(cam2world, sopen, sclose, f) // pbrt-v2 doesnot specify hither and yon
 {
-   // YOUR CODE HERE -- build and store datastructures representing the given lens
-   // and film placement.
 	scenecam.specfile			= specfile;	
 	scenecam.filmdistance		= filmdistance;
 	scenecam.aperture_diameter	= aperture_diameter;
@@ -36,33 +35,14 @@ RealisticCamera::RealisticCamera(const AnimatedTransform &cam2world,
    //current_path();
 	if (specfile.compare("") != 0)  {        
         ParseLens("C:\\RENDERING\\HW3\\project2_template\\"+specfile);
-    }
- //   for (int i=0;i<lens.size();i++){
- //       printf("%d : [ %5.5f %5.5f %5.5f %5.5f ] \n", i, lens[i].lens_radius, lens[i].axpos, lens[i].N, lens[i].aperture);
- //   }
-	//printf("SumofThick = %f \n", SumofThick);    
-
-    // Assume the origin of the camera system is at the front lens
-    RasterToCamera = Scale(-1,1,1) * // fix the issue of horizontal flipping
-                   Translate(Vector(-1*Xres*ScaleRate/2, -1*Yres*ScaleRate/2, -1*filmdistance)) * 
-                   Scale(ScaleRate, ScaleRate, 1.0f);
+    } 
 }
 
-
-
 float RealisticCamera::GenerateRay(const CameraSample &sample, Ray *ray) const {
-  // YOUR CODE HERE -- make that ray!
-  
-  // use sample->imageX and sample->imageY to get raster-space coordinates
-  // of the sample point on the film.
-  // use sample->lensU and sample->lensV to get a sample position on the lens
-	
 	Point P_ras(sample.imageX, sample.imageY, 0);
 	Point P_screen;
-	//RasterToCamera(Pras, &Pcamera);
 	RasterToScreen(P_ras, &P_screen);
 	P_screen.x *= -1;
-	//P_screen.y *= -1;
 	P_screen.z  = -1*(SumofThick+scenecam.filmdistance);
 
 	float lensU, lensV;
@@ -70,45 +50,72 @@ float RealisticCamera::GenerateRay(const CameraSample &sample, Ray *ray) const {
     lensU *= lens.back().aperture/2;
 	lensV *= lens.back().aperture/2;    
 
-    double _d = sqrt( lens.back().lens_radius*lens.back().lens_radius - sqrt( lensU*lensU + lensV*lensV ) );
+    double _d = sqrt( lens.back().radius*lens.back().radius - sqrt( lensU*lensU + lensV*lensV ) );
     float initRayZ = 0;
-    if (lens.back().lens_radius > 0)
+    if (lens.back().radius > 0)
     {
-        initRayZ = -1*SumofThick - lens.back().lens_radius - _d;
+        initRayZ = -1*SumofThick - lens.back().radius - _d;
     } else {
-        initRayZ = -1*SumofThick + lens.back().lens_radius - _d;
+        initRayZ = -1*SumofThick + lens.back().radius - _d;
     }
 	Point FirstSamplePoint (lensU, lensV, initRayZ);
     *ray = Ray(P_screen, Normalize(Vector(FirstSamplePoint - P_screen)), 0.f, INFINITY);
     ray->time = Lerp(sample.time, shutterOpen, shutterClose);
-
+	//Ray r = *ray;
 	
+	Point p_hit;
 	//double thickLen = -1*SumofThick;
-	//for ( int index = lens.size()-1; index >= 0; index--){
-	//	//// Modify ray for depth of field
-	//	if (lens[index].lens_radius > 0.) {
-	//		// Sample point on lens
-	//		float lensU, lensV;
-	//		ConcentricSampleDisk(sample.lensU, sample.lensV, &lensU, &lensV);
-	//		lensU *= (lens[index].aperture/2);
-	//		lensV *= (lens[index].aperture/2);
+	for ( int index = lens.size()-1; index >= 0; index--){
+		
+		if(lens[index].N == 0 || lens[index].radius == 0)
+		{
+			float scale = fabs((lens[index].axpos - ray->o.z)/ray->d.z);
+			p_hit = ray->o + scale*ray->d; 
+		}
+		else
+		{
+			float tHit = 0;
+			Vector		w2oV(0.f, 0.f, lens[index].radius - lens[index].axpos);
+			Transform	o2w = Translate(-1*w2oV), 
+						w2o = Translate(1*w2oV);
 
-	//		double _d = sqrt( lens[index].lens_radius*lens[index].lens_radius - sqrt( lensU*lensU + lensV*lensV ) );
-	//		Point Rayway(lensU, lensV, thickLen-lens[index].lens_radius+_d);
+			Sphere sphere(&o2w, &w2o, false, fabs(lens[index].radius), -1*lens[index].radius, lens[index].radius, 360);
 
-	//		// Compute point on plane of focus
-	//		//float ft = focaldistance / ray->d.z;
-	//		//Point Pfocus = (*ray)(ft);
+			float rayEpsilon;
+			DifferentialGeometry dg;
+			if (!sphere.Intersect(*ray, &tHit, &rayEpsilon, &dg)) return 0.f;
+			if (tHit > ray->maxt || tHit < ray->mint) return 0.f;
 
-	//		// Update ray for effect of lens
-	//		ray->o = Point(lensU, lensV, 0.f);
-	//		ray->d = Normalize(Rayway - ray->o);
-	//		//ray->o = Point(lensU, lensV, 0.f);
-	//		
-	//		thickLen += lens[index].axpos;
-	//	}
-	//}
+			p_hit = (*ray)(tHit);
+		}		
+		if ( (p_hit.x * p_hit.x + p_hit.y * p_hit.y) >= (lens[index].aperture*lens[index].aperture)/4) 
+			return 0.f; 
 
+		Vector Normal;
+		// returned normal always points from the sphere surface outward
+		Normal = Normalize(p_hit - Point(0, 0, lens[index].axpos - lens[index].radius));
+
+		/*if (lens[index].radius == 0) {
+			assert(lens[indexi].N == 1.f);
+			assert(lens[index-1].N == 1.f);
+		}*/
+
+		
+		// update ray direction
+		Vector newD;
+		//float n1;
+		float n2 = (index==0)? 1 : lens[index-1].N;
+		if (lens[index].radius * ray->d.z > 0) 
+			Normal = Normal*-1;
+		
+		if (!SnellsLaw(ray->d, Normal, lens[index].N, n2, &newD)) {
+			//cout << "total internal reflection" << endl;
+			return 0.f;
+		} 
+		*ray = Ray(p_hit, Normalize(newD), 0.f, INFINITY, ray->time);
+	}
+	
+	ray->time = Lerp(sample.time, shutterOpen, shutterClose);
     CameraToWorld(*ray, ray);
 	ray->d = Normalize(ray->d);
 
@@ -120,6 +127,24 @@ void RealisticCamera::RasterToScreen(IN const Point Praster, OUT Point *P_screen
 	P_screen->y = (Praster.y  - (Yres/2) ) * ScaleRate;
 
 	return;
+}
+
+bool RealisticCamera::SnellsLaw(Vector s1, Vector N, float n1, float n2, Vector *s2) const {
+
+	float mu = n1/n2;
+	
+	float costheta = Dot(-1*s1, N); // note normal is pointing in opposite direction of s1
+	float toSqrt = 1 - mu*mu* ( 1- costheta*costheta);
+	
+	if (toSqrt < 0) return false; // total internal reflection
+
+	int sign = 1;
+	if (costheta < 0) sign = -1;
+
+	float gamma = mu*costheta - sign*sqrtf(toSqrt); 
+
+	*s2 = mu*s1 + gamma*N;
+	return true;
 }
 
 void RealisticCamera::ParseLens(const string& filename)  {
@@ -138,8 +163,9 @@ void RealisticCamera::ParseLens(const string& filename)  {
         {
 		    lens.resize(lens.size()+1);
 		    Lens& len = lens[lens.size()-1];
-            sscanf(line, "%f %f %f %f\n", &len.lens_radius, &len.axpos, &len.N, &len.aperture);
-			SumofThick+=len.axpos;
+            sscanf(line, "%f %f %f %f\n", &len.radius, &len.thickness, &len.N, &len.aperture);
+			SumofThick+=len.thickness;
+			len.axpos = -1*SumofThick;
         }
     }
 

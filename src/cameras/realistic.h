@@ -30,8 +30,8 @@ struct SceneCamera {
 };
 class Lens {
 public:
-    unsigned int lensIndex;
-    float lens_radius;
+    float radius;
+    float thickness;
     float axpos;
     float N;
     float aperture;
@@ -61,7 +61,7 @@ private:
 	// RealisticCamera Public Methods
     void ParseLens(const string& filename);
 	void RasterToScreen(IN const Point Praster, OUT Point *Pscreen) const;
-    
+    bool SnellsLaw(Vector s1, Vector N, float n1, float n2, Vector *s2) const;
 };
 
 
