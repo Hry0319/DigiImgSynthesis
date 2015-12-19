@@ -39,13 +39,14 @@
 #include "imageio.h"
 
 
+vector<MedianCutRect*> leafs;
+
 // MedianCutEnvironmentLight Method Definitions
 MedianCutEnvironmentLight::~MedianCutEnvironmentLight() {
     delete distribution;
     delete radianceMap;
     delete summedArea;
 }
-
 
 MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2world, const Spectrum &L, int ns, const string &texmap) : Light(light2world, ns) 
 {
@@ -124,19 +125,53 @@ MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2worl
 
     //int firstCut = width/2;
 
-    MedianCutRect *mcr = new MedianCutRect(NULL,NULL,0,0,width,height,summedArea[width*height]);
-    
+    MedianCutRect *mcr = new MedianCutRect(NULL,NULL,0,0,width,height,summedArea[width*height]); 
 
     CutCut(mcr, 0);
+    
+    float rgb[3];
+    for(unsigned int index = 0; index < leafs.size(); index++)
+    {
+        int area = (leafs[index]->Rect_width-leafs[index]->x)*(leafs[index]->Rect_height-leafs[index]->y);
+        leafs[index]->rgbspectrum = SummedAreaValue(leafs[index]->x, leafs[index]->y, leafs[index]->Rect_width, leafs[index]->Rect_height);
+        leafs[index]->SummedValue = leafs[index]->rgbspectrum.y();
+        CaculateLights(leafs[index], texels);
+        //
+        /*leafs[index]->rgbspectrum.ToRGB(rgb);
+        rgb[0] = rgb[0]/area;
+        rgb[1] = rgb[1]/area;
+        rgb[2] = rgb[2]/area;*/
+    }
+}
 
+void MedianCutEnvironmentLight::CaculateLights(MedianCutRect *mcr, RGBSpectrum *texels)const
+{
+    int area = (mcr->Rect_width-mcr->x)*(mcr->Rect_height-mcr->y);
+    for (unsigned int y = mcr->y; y < mcr->Rect_height;y++)
+    {
+        for (unsigned int x = mcr->x; x < mcr->Rect_width;x++)
+        {
+            float rgb[3];
+            texels[x+y*AreaWidth].ToRGB(rgb);
+            if(rgb[0] > 0)
+                mcr->meanRGB[0] += rgb[0];
+            if(rgb[1] > 0)
+                mcr->meanRGB[1] += rgb[1];
+            if(rgb[2] > 0)
+                mcr->meanRGB[2] += rgb[2];
+        }
+    }
+    if(mcr->meanRGB[0] > 0)
+        mcr->meanRGB[0] /= area;
+    if(mcr->meanRGB[1] > 0)
+        mcr->meanRGB[1] /= area;
+    if(mcr->meanRGB[2] > 0)
+        mcr->meanRGB[2] /= area;
 }
 
 //RGBSpectrum SummedAreaValue(int x,int y,int width,int height)
 void MedianCutEnvironmentLight::CutCut( MedianCutRect *root, int nowTreeHeight/*,int x,int y,int width,int height*/ )const
 {
-    //MedianCutRect *leftChild;
-    //MedianCutRect *rightChild;
-
     if (nowTreeHeight > Log2(nSamples))
     {
         return;
@@ -174,6 +209,11 @@ void MedianCutEnvironmentLight::CutCut( MedianCutRect *root, int nowTreeHeight/*
             CutCut((MedianCutRect*)root->left, nowTreeHeight + 1);
             root->right = new MedianCutRect(NULL, NULL, root->x + medianCC, root->y, root->Rect_width - medianCC -1, root->Rect_height, 0);
             CutCut((MedianCutRect*)root->right, nowTreeHeight + 1);
+            if(nowTreeHeight + 1 > Log2(nSamples))
+            {
+                leafs.push_back((MedianCutRect*)root->left);
+                leafs.push_back((MedianCutRect*)root->right);
+            }
 
         }
         else
@@ -205,15 +245,21 @@ void MedianCutEnvironmentLight::CutCut( MedianCutRect *root, int nowTreeHeight/*
             CutCut((MedianCutRect*)root->left, nowTreeHeight + 1);
             root->right = new MedianCutRect(NULL, NULL, root->x, root->y + medianCC, root->Rect_width, root->Rect_height - medianCC - 1, 0);
             CutCut((MedianCutRect*)root->right, nowTreeHeight + 1);
+            if(nowTreeHeight + 1 > Log2(nSamples))
+            {
+                leafs.push_back((MedianCutRect*)root->left);
+                leafs.push_back((MedianCutRect*)root->right);
+            }
+
         }
     }
 }
 
 void MedianCutEnvironmentLight::AllocateSummedAreaTable(float *summedArea, unsigned int width, unsigned int height)const
 {
-    for(int i = 0; i < height; i++ )
+    for(unsigned int i = 0; i < height; i++ )
     {
-        for(int j = 0; j < width; j++)
+        for(unsigned int j = 0; j < width; j++)
         {
             int _i_j = i*width+j;
             if(i==0)

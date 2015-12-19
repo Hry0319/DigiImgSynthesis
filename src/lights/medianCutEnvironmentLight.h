@@ -43,9 +43,11 @@
 #include "shape.h"
 #include "scene.h"
 #include "mipmap.h"
+#include <vector>
 
 class MedianCutRect {
     public:
+        MedianCutRect(){};
     
         MedianCutRect(void* _left, void* _right, int _x, int _y, int _Rect_width, int _Rect_height, float _SummedValue)
         {
@@ -55,7 +57,10 @@ class MedianCutRect {
             y           = _y;
             Rect_width  = _Rect_width;
             Rect_height = _Rect_height;
-            SummedValue = _SummedValue;            
+            SummedValue = _SummedValue;    
+            meanRGB[0]  = 0;
+            meanRGB[1]  = 0;
+            meanRGB[2]  = 0;
         }   
         
         void*   left;
@@ -63,10 +68,13 @@ class MedianCutRect {
         int     x,y;
         int     Rect_width,Rect_height;
         float   SummedValue;    
-        float   meanRGB;
+        float   meanRGB[3];
+        RGBSpectrum rgbspectrum;
 
         //centroid Point
-        Point   PointLight;
+        Point   PointLight;        
+    //private:
+        //void leaf();
     
 };
 
@@ -84,7 +92,7 @@ class MedianCutEnvironmentLight : public Light {
         float Pdf(const Point &, const Vector &) const;                
         bool IsDeltaLight() const { return false; }
         void AllocateSummedAreaTable(float *summedArea, unsigned int width, unsigned int height)const;
-
+        
 
     private:
         MIPMap<RGBSpectrum> *radianceMap;
@@ -92,16 +100,17 @@ class MedianCutEnvironmentLight : public Light {
         float   *summedArea;
         int     nSamples;
         int     AreaWidth;
-        
+
+        void CaculateLights(MedianCutRect *mcr, RGBSpectrum *texels)const;
         void CutCut(MedianCutRect *root, int nowTreeHeight/*,int x,int y,int width,int height*/)const;
         RGBSpectrum SummedAreaValue(int x,int y,int width,int height)const
         {
             int x1 = x + width-1;
             int y1 = y + height-1;
-            RGBSpectrum upper_left   = summedArea[x          + AreaWidth*y ];
-            RGBSpectrum upper_right  = summedArea[x1         + AreaWidth*y ];
-            RGBSpectrum button_left  = summedArea[x          + AreaWidth*y1];
-            RGBSpectrum button_right = summedArea[x1         + AreaWidth*y1];
+            RGBSpectrum upper_left   = summedArea[x  + AreaWidth*y ];
+            RGBSpectrum upper_right  = summedArea[x1 + AreaWidth*y ];
+            RGBSpectrum button_left  = summedArea[x  + AreaWidth*y1];
+            RGBSpectrum button_right = summedArea[x1 + AreaWidth*y1];
 
             return button_right + upper_left - upper_right - button_left;
         }
