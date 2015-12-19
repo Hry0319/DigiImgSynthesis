@@ -44,10 +44,34 @@
 #include "scene.h"
 #include "mipmap.h"
 
-// MedianCutEnvironmentLight Declarations
+class MedianCutRect {
+    public:
+    
+        MedianCutRect(void* _left, void* _right, int _x, int _y, int _Rect_width, int _Rect_height, float _SummedValue)
+        {
+            left        = _left;
+            right       = _right;
+            x           = _x;
+            y           = _y;
+            Rect_width  = _Rect_width;
+            Rect_height = _Rect_height;
+            SummedValue = _SummedValue;            
+        }   
+        
+        void*   left;
+        void*   right;
+        int     x,y;
+        int     Rect_width,Rect_height;
+        float   SummedValue;    
+        float   meanRGB;
+
+        //centroid Point
+        Point   PointLight;
+    
+};
+
 class MedianCutEnvironmentLight : public Light {
     public:
-        // MedianCutEnvironmentLight Public Methods
         MedianCutEnvironmentLight(const Transform &light2world, const Spectrum &power, int ns,
             const string &texmap);
         ~MedianCutEnvironmentLight();
@@ -57,25 +81,30 @@ class MedianCutEnvironmentLight : public Light {
         Spectrum Sample_L(const Point &p, float pEpsilon, const LightSample &ls, float time, Vector *wi, float *pdf, VisibilityTester *visibility) const;
         Spectrum Sample_L(const Scene *scene, const LightSample &ls, float u1, float u2, float time, Ray *ray, Normal *Ns, float *pdf) const;
 
-        float Pdf(const Point &, const Vector &) const;
-        
-        void 
-        SHProject(
-          const Point &p,
-          float pEpsilon, 
-          int lmax,
-          const Scene *scene, 
-          bool computeLightVis, 
-          float time, RNG &rng,
-          Spectrum *coeffs
-          ) const;
-        
+        float Pdf(const Point &, const Vector &) const;                
         bool IsDeltaLight() const { return false; }
+        void AllocateSummedAreaTable(float *summedArea, unsigned int width, unsigned int height)const;
+
 
     private:
-        // MedianCutEnvironmentLight Private Data
         MIPMap<RGBSpectrum> *radianceMap;
         Distribution2D *distribution;
+        float   *summedArea;
+        int     nSamples;
+        int     AreaWidth;
+        
+        void CutCut(MedianCutRect *root, int nowTreeHeight/*,int x,int y,int width,int height*/)const;
+        RGBSpectrum SummedAreaValue(int x,int y,int width,int height)const
+        {
+            int x1 = x + width-1;
+            int y1 = y + height-1;
+            RGBSpectrum upper_left   = summedArea[x          + AreaWidth*y ];
+            RGBSpectrum upper_right  = summedArea[x1         + AreaWidth*y ];
+            RGBSpectrum button_left  = summedArea[x          + AreaWidth*y1];
+            RGBSpectrum button_right = summedArea[x1         + AreaWidth*y1];
+
+            return button_right + upper_left - upper_right - button_left;
+        }
 };
 
 MedianCutEnvironmentLight *CreateMedianCutEnvironmentLight(const Transform &light2world, const ParamSet &paramSet);

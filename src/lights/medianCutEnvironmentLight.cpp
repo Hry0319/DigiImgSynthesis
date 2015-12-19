@@ -38,35 +38,21 @@
 #include "paramset.h"
 #include "imageio.h"
 
-// MedianCutEnvironmentLight Utility Classes
-struct InfiniteAreaCube {
-    // InfiniteAreaCube Public Methods
-    InfiniteAreaCube(const MedianCutEnvironmentLight *l, const Scene *s,
-                     float t, bool cv, float pe)
-        : light(l), scene(s), time(t), pEpsilon(pe), computeVis(cv) { }
-    Spectrum operator()(int, int, const Point &p, const Vector &w) {
-        Ray ray(p, w, pEpsilon, INFINITY, time);
-        if (!computeVis || !scene->IntersectP(ray))
-            return light->Le(RayDifferential(ray));
-        return 0.f;
-    }
-    const MedianCutEnvironmentLight *light;
-    const Scene *scene;
-    float time, pEpsilon;
-    bool computeVis;
-};
 
 // MedianCutEnvironmentLight Method Definitions
 MedianCutEnvironmentLight::~MedianCutEnvironmentLight() {
     delete distribution;
     delete radianceMap;
+    delete summedArea;
 }
+
 
 MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2world, const Spectrum &L, int ns, const string &texmap) : Light(light2world, ns) 
 {
     int width           = 0;
     int height          = 0;
     RGBSpectrum *texels = NULL;
+    nSamples = ns;
 
     // Read texel data from _texmap_ into _texels_
     if (texmap != "") 
@@ -76,37 +62,173 @@ MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2worl
             for (int i = 0; i < width * height; ++i)
                 texels[i] *= L.ToRGBSpectrum();
     }
-    if (!texels) 
-    {
+    if (!texels) {
         width = height = 1;
         texels = new RGBSpectrum[1];
         texels[0] = L.ToRGBSpectrum();
     }
-    radianceMap = new MIPMap<RGBSpectrum>(width, height, texels);
-    delete[] texels;
+    //for (int y = 0; y < height; ++y){
+    //    const float theta = M_PI * float(y+.5f)/float(height);
+    //    const float weight = sinf(theta);
+    //    for (int x = 0; x < width; ++x)
+    //    {
+    //        //texels[x + width * y] *= weight;
+    //        printf("%f ", texels[x + width * y].y());
+    //    }
+    //}
 
-    // Initialize sampling PDFs for infinite area light
-    // Compute scalar-valued image _img_ from environment map
-    float filter    = 1.f / max(width, height);
-    float *img      = new float[width*height];
-    for (int v = 0; v < height; ++v) 
-    {
-        float vp = (float)v / (float)height;
-        float sinTheta = sinf(M_PI * float(v+.5f)/float(height));
+    //float** summedArea = new float*[height];
+    //for(int i = 0; i < height; i++)
+    //    summedArea[i] = new float[width];
 
-        for (int u = 0; u < width; ++u) 
-        {
-            float up = (float)u / (float)width;
-            img[u+v*width] = radianceMap->Lookup(up, vp, filter).y();
-            img[u+v*width] *= sinTheta;
-        }
+
+
+    //// Compute scalar-valued image _img_ from environment map
+    //float filter = 1.f / max(width, height);
+    //float *img = new float[width*height];
+    //for (int v = 0; v < height; ++v) {
+    //    float vp = (float)v / (float)height;
+    //    float sinTheta = sinf(M_PI * float(v+.5f)/float(height));
+    //    for (int u = 0; u < width; ++u) {
+    //        //float up = (float)u / (float)width;
+    //        //img[u+v*width] = radianceMap->Lookup(up, vp, filter).y();
+    //        img[u+v*width] = texels[u+v*width].y();
+    //        img[u+v*width] *= sinTheta;
+    //    }
+    //}
+    AreaWidth = width;
+    summedArea = (float*)malloc(sizeof(float)*width*height);
+    for (int i=0;i<width*height;i++){
+        summedArea[i]=0;
     }
+    //float rgb[3];
+    for(int index = 0; index < width*height; index++ ){
+        //texels[index].ToRGB(rgb);
+        //summedArea[index] = rgb[0]+rgb[1]+rgb[2];
+        
+        float vp = (float)(index/width) / (float)height;
+        float sinTheta = sinf(M_PI * float((index/width)+.5f)/float(height));
+        summedArea[index] = texels[index].y() * sinTheta;
+    }
+    
+    //for(int index = 0; index < width*height; index++ ){
+    //    //printf("%f // %f \n",summedArea[index], img[index]);
+    //    if( summedArea[index] != img[index])
+    //        printf("888888888888888888888888888888888888888888888888888 \n");
+    //}
+    AllocateSummedAreaTable(summedArea,width,height);
 
     // Compute sampling distributions for rows and columns of image
-    distribution = new Distribution2D(img, width, height);
-    delete[] img;
+    //distribution = new Distribution2D(img, width, height);
+    //delete[] img;
+
+    //int firstCut = width/2;
+
+    MedianCutRect *mcr = new MedianCutRect(NULL,NULL,0,0,width,height,summedArea[width*height]);
+    
+
+    CutCut(mcr, 0);
+
 }
 
+//RGBSpectrum SummedAreaValue(int x,int y,int width,int height)
+void MedianCutEnvironmentLight::CutCut( MedianCutRect *root, int nowTreeHeight/*,int x,int y,int width,int height*/ )const
+{
+    //MedianCutRect *leftChild;
+    //MedianCutRect *rightChild;
+
+    if (nowTreeHeight > Log2(nSamples))
+    {
+        return;
+    }
+    else
+    {
+        if(root->Rect_width > root->Rect_height)
+        {
+            float variance = SummedAreaValue(root->x, root->y, root->Rect_width, root->Rect_height).y();
+            int   medianCC = 0;
+            float leftRect, RightRect;
+            //RGBSpectrum  minL,minR;
+            for(int indexX = 1 ; indexX < root->Rect_width - 1; indexX++)
+            {
+                leftRect  = SummedAreaValue(
+                                root->x, 
+                                root->y, 
+                                indexX /*root->Rect_width*/, 
+                                root->Rect_height
+                                ).y();
+                RightRect = SummedAreaValue(
+                                root->x + indexX,
+                                root->y, 
+                                root->Rect_width - indexX -1,
+                                root->Rect_height
+                                ).y();
+                if (variance > abs(leftRect-RightRect))
+                {
+                    medianCC = indexX;
+                    variance = abs(leftRect-RightRect);
+
+                }
+            }
+            root->left  = new MedianCutRect(NULL, NULL, root->x, root->y, medianCC, root->Rect_height, 0);
+            root->right = new MedianCutRect(NULL, NULL, root->x + medianCC, root->y, root->Rect_width - medianCC -1, root->Rect_height, 0);
+
+        }
+        else
+        {
+            float variance = SummedAreaValue(root->x, root->y, root->Rect_width, root->Rect_height).y();
+            int   medianCC = 0;
+            float UpRect, ButtonRect;
+            for(int indexY = 1; indexY < root->Rect_height - 1; indexY++)
+            {
+                UpRect  = SummedAreaValue(
+                                root->x, 
+                                root->y, 
+                                root->Rect_width, 
+                                indexY
+                                ).y();
+                ButtonRect = SummedAreaValue(
+                                root->x,
+                                root->y + indexY, 
+                                root->Rect_width,
+                                root->Rect_height - indexY - 1
+                                ).y();
+                if (variance > abs(UpRect-ButtonRect))
+                {
+                    medianCC = indexY;
+                    variance = abs(UpRect-ButtonRect);
+                }
+            }
+            root->left  = new MedianCutRect(NULL, NULL, root->x, root->y, root->Rect_width, medianCC, 0);
+            root->right = new MedianCutRect(NULL, NULL, root->x, root->y + medianCC, root->Rect_width, root->Rect_height - medianCC - 1, 0);
+        }
+    }
+}
+
+void MedianCutEnvironmentLight::AllocateSummedAreaTable(float *summedArea, unsigned int width, unsigned int height)const
+{
+    for(int i = 0; i < height; i++ )
+    {
+        for(int j = 0; j < width; j++)
+        {
+            int _i_j = i*width+j;
+            if(i==0)
+            {
+                if(j!=0)
+                    summedArea[_i_j] += summedArea[_i_j - 1];
+            }
+            else if(j==0)
+            {
+                if(i!=0)
+                    summedArea[_i_j] += summedArea[_i_j - width];
+            }
+            else
+            {
+                summedArea[_i_j] = summedArea[_i_j] + summedArea[_i_j-1] + summedArea[_i_j-width] -summedArea[_i_j-width-1]; 
+            }
+        }
+    }
+}
 
 Spectrum MedianCutEnvironmentLight::Power(const Scene *scene) const 
 {
@@ -221,66 +343,6 @@ MedianCutEnvironmentLight::Sample_L(
     return Ls;
 }
 
-
-void MedianCutEnvironmentLight::SHProject(const Point &p, float pEpsilon,
-        int lmax, const Scene *scene, bool computeLightVis,
-        float time, RNG &rng, Spectrum *coeffs) const {
-    // Project _MedianCutEnvironmentLight_ to SH using Monte Carlo if visibility needed
-    if (computeLightVis) {
-        Light::SHProject(p, pEpsilon, lmax, scene, computeLightVis,
-                         time, rng, coeffs);
-        return;
-    }
-    for (int i = 0; i < SHTerms(lmax); ++i)
-        coeffs[i] = 0.f;
-    int ntheta = radianceMap->Height(), nphi = radianceMap->Width();
-    if (min(ntheta, nphi) > 50) {
-        // Project _MedianCutEnvironmentLight_ to SH from lat-long representation
-
-        // Precompute $\theta$ and $\phi$ values for lat-long map projection
-        float *buf = new float[2*ntheta + 2*nphi];
-        float *bufp = buf;
-        float *sintheta = bufp;  bufp += ntheta;
-        float *costheta = bufp;  bufp += ntheta;
-        float *sinphi = bufp;    bufp += nphi;
-        float *cosphi = bufp;
-        for (int theta = 0; theta < ntheta; ++theta) {
-            sintheta[theta] = sinf((theta + .5f)/ntheta * M_PI);
-            costheta[theta] = cosf((theta + .5f)/ntheta * M_PI);
-        }
-        for (int phi = 0; phi < nphi; ++phi) {
-            sinphi[phi] = sinf((phi + .5f)/nphi * 2.f * M_PI);
-            cosphi[phi] = cosf((phi + .5f)/nphi * 2.f * M_PI);
-        }
-        float *Ylm = ALLOCA(float, SHTerms(lmax));
-        for (int theta = 0; theta < ntheta; ++theta) {
-            for (int phi = 0; phi < nphi; ++phi) {
-                // Add _MedianCutEnvironmentLight_ texel's contribution to SH coefficients
-                Vector w = Vector(sintheta[theta] * cosphi[phi],
-                                  sintheta[theta] * sinphi[phi],
-                                  costheta[theta]);
-                w = Normalize(LightToWorld(w));
-                Spectrum Le = Spectrum(radianceMap->Texel(0, phi, theta),
-                                       SPECTRUM_ILLUMINANT);
-                SHEvaluate(w, lmax, Ylm);
-                for (int i = 0; i < SHTerms(lmax); ++i)
-                    coeffs[i] += Le * Ylm[i] * sintheta[theta] *
-                        (M_PI / ntheta) * (2.f * M_PI / nphi);
-            }
-        }
-
-        // Free memory used for lat-long theta and phi values
-        delete[] buf;
-    }
-    else {
-        // Project _MedianCutEnvironmentLight_ to SH from cube map sampling
-        SHProjectCube(InfiniteAreaCube(this, scene, time, computeLightVis,
-                                       pEpsilon),
-                      p, 200, lmax, coeffs);
-    }
-}
-
-
 MedianCutEnvironmentLight 
 *CreateMedianCutEnvironmentLight(
     const Transform &light2world,
@@ -297,3 +359,61 @@ MedianCutEnvironmentLight
 
     return new MedianCutEnvironmentLight(light2world, L * sc, nSamples, texmap);
 }
+
+//void MedianCutEnvironmentLight::SHProject(const Point &p, float pEpsilon,
+//        int lmax, const Scene *scene, bool computeLightVis,
+//        float time, RNG &rng, Spectrum *coeffs) const {
+//    // Project _MedianCutEnvironmentLight_ to SH using Monte Carlo if visibility needed
+//    if (computeLightVis) {
+//        Light::SHProject(p, pEpsilon, lmax, scene, computeLightVis,
+//                         time, rng, coeffs);
+//        return;
+//    }
+//    for (int i = 0; i < SHTerms(lmax); ++i)
+//        coeffs[i] = 0.f;
+//    int ntheta = radianceMap->Height(), nphi = radianceMap->Width();
+//    if (min(ntheta, nphi) > 50) {
+//        // Project _MedianCutEnvironmentLight_ to SH from lat-long representation
+//
+//        // Precompute $\theta$ and $\phi$ values for lat-long map projection
+//        float *buf = new float[2*ntheta + 2*nphi];
+//        float *bufp = buf;
+//        float *sintheta = bufp;  bufp += ntheta;
+//        float *costheta = bufp;  bufp += ntheta;
+//        float *sinphi = bufp;    bufp += nphi;
+//        float *cosphi = bufp;
+//        for (int theta = 0; theta < ntheta; ++theta) {
+//            sintheta[theta] = sinf((theta + .5f)/ntheta * M_PI);
+//            costheta[theta] = cosf((theta + .5f)/ntheta * M_PI);
+//        }
+//        for (int phi = 0; phi < nphi; ++phi) {
+//            sinphi[phi] = sinf((phi + .5f)/nphi * 2.f * M_PI);
+//            cosphi[phi] = cosf((phi + .5f)/nphi * 2.f * M_PI);
+//        }
+//        float *Ylm = ALLOCA(float, SHTerms(lmax));
+//        for (int theta = 0; theta < ntheta; ++theta) {
+//            for (int phi = 0; phi < nphi; ++phi) {
+//                // Add _MedianCutEnvironmentLight_ texel's contribution to SH coefficients
+//                Vector w = Vector(sintheta[theta] * cosphi[phi],
+//                                  sintheta[theta] * sinphi[phi],
+//                                  costheta[theta]);
+//                w = Normalize(LightToWorld(w));
+//                Spectrum Le = Spectrum(radianceMap->Texel(0, phi, theta),
+//                                       SPECTRUM_ILLUMINANT);
+//                SHEvaluate(w, lmax, Ylm);
+//                for (int i = 0; i < SHTerms(lmax); ++i)
+//                    coeffs[i] += Le * Ylm[i] * sintheta[theta] *
+//                        (M_PI / ntheta) * (2.f * M_PI / nphi);
+//            }
+//        }
+//
+//        // Free memory used for lat-long theta and phi values
+//        delete[] buf;
+//    }
+//    else {
+//        // Project _MedianCutEnvironmentLight_ to SH from cube map sampling
+//        SHProjectCube(InfiniteAreaCube(this, scene, time, computeLightVis,
+//                                       pEpsilon),
+//                      p, 200, lmax, coeffs);
+//    }
+//}
