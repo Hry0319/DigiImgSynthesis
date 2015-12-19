@@ -171,7 +171,9 @@ void MedianCutEnvironmentLight::CutCut( MedianCutRect *root, int nowTreeHeight/*
                 }
             }
             root->left  = new MedianCutRect(NULL, NULL, root->x, root->y, medianCC, root->Rect_height, 0);
+            CutCut((MedianCutRect*)root->left, nowTreeHeight + 1);
             root->right = new MedianCutRect(NULL, NULL, root->x + medianCC, root->y, root->Rect_width - medianCC -1, root->Rect_height, 0);
+            CutCut((MedianCutRect*)root->right, nowTreeHeight + 1);
 
         }
         else
@@ -200,7 +202,9 @@ void MedianCutEnvironmentLight::CutCut( MedianCutRect *root, int nowTreeHeight/*
                 }
             }
             root->left  = new MedianCutRect(NULL, NULL, root->x, root->y, root->Rect_width, medianCC, 0);
+            CutCut((MedianCutRect*)root->left, nowTreeHeight + 1);
             root->right = new MedianCutRect(NULL, NULL, root->x, root->y + medianCC, root->Rect_width, root->Rect_height - medianCC - 1, 0);
+            CutCut((MedianCutRect*)root->right, nowTreeHeight + 1);
         }
     }
 }
