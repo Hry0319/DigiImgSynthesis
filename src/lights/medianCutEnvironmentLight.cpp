@@ -79,8 +79,7 @@ MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2worl
     //float rgb[3];
     for(int index = 0; index < width*height; index++ ){
         //texels[index].ToRGB(rgb);
-        //summedArea[index] = rgb[0]+rgb[1]+rgb[2];
-        
+        //summedArea[index] = rgb[0]+rgb[1]+rgb[2];        
         float vp = (float)(index/width) / (float)height;
         float sinTheta = sinf(M_PI * float((index/width)+.5f)/float(height));
         summedArea[index] = texels[index].y() * sinTheta;
@@ -94,15 +93,16 @@ MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2worl
     
     for(unsigned int index = 0; index < leafs.size(); index++)
     {
-        int area = (leafs[index]->Rect_width - leafs[index]->x) * (leafs[index]->Rect_height - leafs[index]->y);
         leafs[index]->rgbspectrum = SummedAreaValue(leafs[index]->x, leafs[index]->y, leafs[index]->Rect_width, leafs[index]->Rect_height);
+
         leafs[index]->SummedValue = leafs[index]->rgbspectrum.y();
-        /*leafs[index]->rgbspectrum.ToRGB(rgb);
-        rgb[0] = rgb[0]/area;
-        rgb[1] = rgb[1]/area;
-        rgb[2] = rgb[2]/area;*/
+
         CaculateLights(leafs[index], texels);
-        leafs[index]->rgbspectrum.FromRGB(leafs[index]->meanRGB);
+
+        //leafs[index]->rgbspectrum *= leafs[index]->rgbspectrum.FromRGB(leafs[index]->meanRGB);
+        /*RGBSpectrum rgb;
+        rgb.FromRGB(leafs[index]->meanRGB);
+        leafs[index]->rgbspectrum *= rgb;*/
     }
 }
 
@@ -129,17 +129,14 @@ void MedianCutEnvironmentLight::CaculateLights(MedianCutRect *mcr, RGBSpectrum *
         mcr->meanRGB[1] /= area;
     if(mcr->meanRGB[2] > 0)
         mcr->meanRGB[2] /= area;
-        
+      
+    // Light point
     const float phi = (mcr->Rect_width * 0.5f + mcr->x) / float(AreaWidth) * 2.f * M_PI;
-    const float theta = (mcr->Rect_height * 0.5f + mcr->y) / float(AreaHeight) * M_PI;
-    // Add Light
+    const float theta = (mcr->Rect_height * 0.5f + mcr->y) / float(AreaHeight) * M_PI;    
     const float costheta = cosf(theta), sintheta = sinf(theta);
     const float cosphi = cosf(phi), sinphi = sinf(phi);
     float px = sintheta * cosphi, py = sintheta * sinphi, pz = costheta;
-    mcr->LightPoint.x = px;
-    mcr->LightPoint.y = py;
-    mcr->LightPoint.z = pz;
-    
+    mcr->LightPoint = Point(px,py,pz);    
 }
 
 //RGBSpectrum SummedAreaValue(int x,int y,int width,int height)
@@ -256,37 +253,22 @@ void MedianCutEnvironmentLight::AllocateSummedAreaTable(float *summedArea, unsig
     }
 }
 
-Spectrum MedianCutEnvironmentLight::Sample_L(const Point &p, float pEpsilon, const LightSample &ls, float time, Vector *wi, float *pdf, VisibilityTester *visibility) const 
+Spectrum 
+MedianCutEnvironmentLight::Sample_L(
+                            const Point &p,
+                            float pEpsilon, 
+                            const LightSample &ls,
+                            float time, 
+                            Vector *wi, 
+                            float *pdf, 
+                            VisibilityTester *visibility
+                            ) const 
 {
-    //PBRT_INFINITE_LIGHT_STARTED_SAMPLE();
-    //// Find $(u,v)$ sample coordinates in infinite light texture
-    //float uv[2], mapPdf;
-    ////distribution->SampleContinuous(ls.uPos[0], ls.uPos[1], uv, &mapPdf);
-    ////if (mapPdf == 0.f) return 0.f;
-
-    //// Convert infinite light sample point to direction
-    //float theta = uv[1] * M_PI, phi = uv[0] * 2.f * M_PI;
-    //float costheta = cosf(theta), sintheta = sinf(theta);
-    //float sinphi = sinf(phi), cosphi = cosf(phi);
-    //*wi = LightToWorld(Vector(sintheta * cosphi, sintheta * sinphi,
-    //                          costheta));
-
-    //// Compute PDF for sampled infinite light direction
-    ////*pdf = mapPdf / (2.f * M_PI * M_PI * sintheta);
-    //if (sintheta == 0.f) *pdf = 0.f;
-
-    //// Return radiance value for infinite light direction
-    //visibility->SetRay(p, pEpsilon, *wi, time);
-    //Spectrum Ls = Spectrum(radianceMap->Lookup(uv[0], uv[1]),
-    //                       SPECTRUM_ILLUMINANT);
-    //PBRT_INFINITE_LIGHT_FINISHED_SAMPLE();
-    //return Ls;
-
     int randomLightSampleNum = rand()%nSamples;
 
     *wi = LightToWorld(Vector(leafs[randomLightSampleNum]->LightPoint));
     visibility->SetRay(p, pEpsilon, *wi, time); 
-    *pdf = 1.f/*/nSamples*/;
+    *pdf = 1.f/nSamples;
     Spectrum Ls = Spectrum(leafs[randomLightSampleNum]->rgbspectrum, SPECTRUM_ILLUMINANT);
     return Ls;
 }
@@ -300,44 +282,9 @@ MedianCutEnvironmentLight::Sample_L(
                             float time,
                             Ray *ray,
                             Normal *Ns, 
-                            float *pdf) const 
+                            float *pdf
+                            ) const 
 {
-    //PBRT_INFINITE_LIGHT_STARTED_SAMPLE();
-    //// Compute direction for infinite light sample ray
-
-    //// Find $(u,v)$ sample coordinates in infinite light texture
-    //float uv[2], mapPdf;
-    //distribution->SampleContinuous(ls.uPos[0], ls.uPos[1], uv, &mapPdf);
-    //if (mapPdf == 0.f) return Spectrum(0.f);
-
-    //float theta = uv[1] * M_PI, phi = uv[0] * 2.f * M_PI;
-    //float costheta = cosf(theta), sintheta = sinf(theta);
-    //float sinphi = sinf(phi), cosphi = cosf(phi);
-    //Vector d = -LightToWorld(Vector(sintheta * cosphi, sintheta * sinphi,
-    //                                costheta));
-    //*Ns = (Normal)d;
-
-    //// Compute origin for infinite light sample ray
-    //Point worldCenter;
-    //float worldRadius;
-    //scene->WorldBound().BoundingSphere(&worldCenter, &worldRadius);
-    //Vector v1, v2;
-    //CoordinateSystem(-d, &v1, &v2);
-    //float d1, d2;
-    //ConcentricSampleDisk(u1, u2, &d1, &d2);
-    //Point Pdisk = worldCenter + worldRadius * (d1 * v1 + d2 * v2);
-    //*ray = Ray(Pdisk + worldRadius * -d, d, 0., INFINITY, time);
-
-    //// Compute _MedianCutEnvironmentLight_ ray PDF
-    //float directionPdf = mapPdf / (2.f * M_PI * M_PI * sintheta);
-    //float areaPdf = 1.f / (M_PI * worldRadius * worldRadius);
-    //*pdf = directionPdf * areaPdf;
-    //if (sintheta == 0.f) *pdf = 0.f;
-    //Spectrum Ls = (radianceMap->Lookup(uv[0], uv[1]), SPECTRUM_ILLUMINANT);
-    //PBRT_INFINITE_LIGHT_FINISHED_SAMPLE();
-
-    //return Ls;
-
     int randomLightSampleNum = rand()%nSamples;
     nowleafs = randomLightSampleNum;
     
@@ -351,48 +298,15 @@ MedianCutEnvironmentLight::Sample_L(
 
 float MedianCutEnvironmentLight::Pdf(const Point &, const Vector &w) const 
 {
-    /*PBRT_INFINITE_LIGHT_STARTED_PDF();
-    Vector wi = WorldToLight(w);
-    float theta = SphericalTheta(wi), phi = SphericalPhi(wi);
-    float sintheta = sinf(theta);
-    if (sintheta == 0.f) return 0.f;
-    float p = distribution->Pdf(phi * INV_TWOPI, theta * INV_PI) /
-           (2.f * M_PI * M_PI * sintheta);
-    PBRT_INFINITE_LIGHT_FINISHED_PDF();
-    return p;*/
-    return 1.f/nSamples;
-    //return 0.0f;
-}
-
-MedianCutEnvironmentLight 
-*CreateMedianCutEnvironmentLight(
-    const Transform &light2world,
-    const ParamSet &paramSet
-    ) 
-{
-    Spectrum L          = paramSet.FindOneSpectrum("L", Spectrum(1.0));
-    Spectrum sc         = paramSet.FindOneSpectrum("scale", Spectrum(1.0));
-    string   texmap     = paramSet.FindOneFilename("mapname", "");
-    int      nSamples   = paramSet.FindOneInt("nsamples", 1);
-
-    if (PbrtOptions.quickRender) 
-        nSamples = max(1, nSamples / 4);
-
-    return new MedianCutEnvironmentLight(light2world, L * sc, nSamples, texmap);
+    //return 1.f/nSamples;
+    return 0.0f;
 }
 
 Spectrum MedianCutEnvironmentLight::Power(const Scene *scene) const 
-{
-    //Point worldCenter;
-    //float worldRadius;
-    //scene->WorldBound().BoundingSphere(&worldCenter, &worldRadius);
-
-    //return M_PI * worldRadius * worldRadius *
-    //    Spectrum(radianceMap->Lookup(.5f, .5f, .5f), SPECTRUM_ILLUMINANT);
-    
-    //return Spectrum(SummedAreaValue(0, 0,AreaWidth, AreaHeight), SPECTRUM_ILLUMINANT);
+{    
+    return Spectrum(SummedAreaValue(0, 0,AreaWidth, AreaHeight), SPECTRUM_ILLUMINANT)/nSamples;
     //return Spectrum(SummedAreaValue(leafs[nowleafs]->x, leafs[nowleafs]->y, leafs[nowleafs]->Rect_width, leafs[nowleafs]->Rect_height), SPECTRUM_ILLUMINANT);
-    return Spectrum(leafs[nowleafs]->rgbspectrum, SPECTRUM_ILLUMINANT);
+    //return Spectrum(leafs[nowleafs]->rgbspectrum, SPECTRUM_ILLUMINANT);
 }
 
 //Spectrum MedianCutEnvironmentLight::Le(const RayDifferential &r) const
@@ -461,3 +375,21 @@ Spectrum MedianCutEnvironmentLight::Power(const Scene *scene) const
 //                      p, 200, lmax, coeffs);
 //    }
 //}
+
+
+MedianCutEnvironmentLight 
+*CreateMedianCutEnvironmentLight(
+    const Transform &light2world,
+    const ParamSet &paramSet
+    ) 
+{
+    Spectrum L          = paramSet.FindOneSpectrum("L", Spectrum(1.0));
+    Spectrum sc         = paramSet.FindOneSpectrum("scale", Spectrum(1.0));
+    string   texmap     = paramSet.FindOneFilename("mapname", "");
+    int      nSamples   = paramSet.FindOneInt("nsamples", 1);
+
+    if (PbrtOptions.quickRender) 
+        nSamples = max(1, nSamples / 4);
+
+    return new MedianCutEnvironmentLight(light2world, L * sc, nSamples, texmap);
+}
