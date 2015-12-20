@@ -104,8 +104,10 @@ class MedianCutEnvironmentLight : public Light {
         {
             int x1 = x + width-1;
             int y1 = y + height-1;
-            //if(x1 > AreaWidth)x1 = AreaWidth;
-            //if(y1 > AreaHeight)y1 = AreaHeight;
+            if(x1 > AreaWidth)x1 = AreaWidth;
+            if(y1 > AreaHeight)y1 = AreaHeight;
+            if(x1 < 0)x1 = 0;
+            if(y1 < 0)y1 = 0;
             RGBSpectrum upper_left   = summedArea[x  + AreaWidth*y ];
             RGBSpectrum upper_right  = summedArea[x1 + AreaWidth*y ];
             RGBSpectrum button_left  = summedArea[x  + AreaWidth*y1];
