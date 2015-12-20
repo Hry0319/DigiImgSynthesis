@@ -86,8 +86,8 @@ class MedianCutEnvironmentLight : public Light {
         float Pdf(const Point &, const Vector &) const;   
         bool IsDeltaLight() const { return false; }
         
-        void SHProject(const Point &p, float pEpsilon, int lmax, const Scene *scene,
-                        bool computeLightVis, float time, RNG &rng, Spectrum *coeffs) const;
+        //void SHProject(const Point &p, float pEpsilon, int lmax, const Scene *scene,
+        //                bool computeLightVis, float time, RNG &rng, Spectrum *coeffs) const;
 
     private:
         //MIPMap<RGBSpectrum> *radianceMap;
