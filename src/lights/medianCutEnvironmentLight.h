@@ -72,7 +72,7 @@ class MedianCutRect {
         RGBSpectrum rgbspectrum;
 
         //centroid Point
-        Point   PointLight;        
+        Point   LightPoint;        
     //private:
         //void leaf();
     
@@ -85,7 +85,7 @@ class MedianCutEnvironmentLight : public Light {
         ~MedianCutEnvironmentLight();
         
         Spectrum Power(const Scene *) const;
-        Spectrum Le(const RayDifferential &r) const;
+        //Spectrum Le(const RayDifferential &r) const;
         Spectrum Sample_L(const Point &p, float pEpsilon, const LightSample &ls, float time, Vector *wi, float *pdf, VisibilityTester *visibility) const;
         Spectrum Sample_L(const Scene *scene, const LightSample &ls, float u1, float u2, float time, Ray *ray, Normal *Ns, float *pdf) const;
 
@@ -95,8 +95,8 @@ class MedianCutEnvironmentLight : public Light {
         
 
     private:
-        MIPMap<RGBSpectrum> *radianceMap;
-        Distribution2D *distribution;
+        //MIPMap<RGBSpectrum> *radianceMap;
+        //Distribution2D *distribution;
         float   *summedArea;
         int     nSamples;
         int     AreaWidth,AreaHeight;
