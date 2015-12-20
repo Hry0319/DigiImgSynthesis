@@ -40,6 +40,7 @@
 
 
 vector<MedianCutRect*> leafs;
+int     nowleafs;
 
 // MedianCutEnvironmentLight Method Definitions
 MedianCutEnvironmentLight::~MedianCutEnvironmentLight() {
@@ -101,6 +102,7 @@ MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2worl
         rgb[1] = rgb[1]/area;
         rgb[2] = rgb[2]/area;*/
         CaculateLights(leafs[index], texels);
+        leafs[index]->rgbspectrum.FromRGB(leafs[index]->meanRGB);
     }
 }
 
@@ -126,7 +128,7 @@ void MedianCutEnvironmentLight::CaculateLights(MedianCutRect *mcr, RGBSpectrum *
     if(mcr->meanRGB[1] > 0)
         mcr->meanRGB[1] /= area;
     if(mcr->meanRGB[2] > 0)
-        mcr->meanRGB[2] /= area;    
+        mcr->meanRGB[2] /= area;
         
     const float phi = (mcr->Rect_width * 0.5f + mcr->x) / float(AreaWidth) * 2.f * M_PI;
     const float theta = (mcr->Rect_height * 0.5f + mcr->y) / float(AreaHeight) * M_PI;
@@ -284,8 +286,8 @@ Spectrum MedianCutEnvironmentLight::Sample_L(const Point &p, float pEpsilon, con
 
     *wi = LightToWorld(Vector(leafs[randomLightSampleNum]->LightPoint));
     visibility->SetRay(p, pEpsilon, *wi, time); 
-    *pdf = 1.0f;
-    Spectrum Ls = Spectrum(leafs[randomLightSampleNum]->rgbspectrum);
+    *pdf = 1.f/*/nSamples*/;
+    Spectrum Ls = Spectrum(leafs[randomLightSampleNum]->rgbspectrum, SPECTRUM_ILLUMINANT);
     return Ls;
 }
 
@@ -337,12 +339,13 @@ MedianCutEnvironmentLight::Sample_L(
     //return Ls;
 
     int randomLightSampleNum = rand()%nSamples;
+    nowleafs = randomLightSampleNum;
     
     Point lightPos = LightToWorld(leafs[randomLightSampleNum]->LightPoint);
     *ray = Ray(lightPos, - Normalize(Vector(lightPos)), 0.f, INFINITY, time);
     *Ns = (Normal)ray->d;
     *pdf = UniformSpherePdf();
-    Spectrum Ls = Spectrum(leafs[randomLightSampleNum]->rgbspectrum);
+    Spectrum Ls = Spectrum(leafs[randomLightSampleNum]->rgbspectrum, SPECTRUM_ILLUMINANT);
     return Ls;
 }
 
@@ -387,7 +390,9 @@ Spectrum MedianCutEnvironmentLight::Power(const Scene *scene) const
     //return M_PI * worldRadius * worldRadius *
     //    Spectrum(radianceMap->Lookup(.5f, .5f, .5f), SPECTRUM_ILLUMINANT);
     
-    return Spectrum(SummedAreaValue(0, 0,AreaWidth, AreaHeight), SPECTRUM_ILLUMINANT);
+    //return Spectrum(SummedAreaValue(0, 0,AreaWidth, AreaHeight), SPECTRUM_ILLUMINANT);
+    //return Spectrum(SummedAreaValue(leafs[nowleafs]->x, leafs[nowleafs]->y, leafs[nowleafs]->Rect_width, leafs[nowleafs]->Rect_height), SPECTRUM_ILLUMINANT);
+    return Spectrum(leafs[nowleafs]->rgbspectrum, SPECTRUM_ILLUMINANT);
 }
 
 //Spectrum MedianCutEnvironmentLight::Le(const RayDifferential &r) const
