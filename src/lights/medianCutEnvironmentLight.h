@@ -99,7 +99,7 @@ class MedianCutEnvironmentLight : public Light {
         Distribution2D *distribution;
         float   *summedArea;
         int     nSamples;
-        int     AreaWidth;
+        int     AreaWidth,AreaHeight;
 
         void CaculateLights(MedianCutRect *mcr, RGBSpectrum *texels)const;
         void CutCut(MedianCutRect *root, int nowTreeHeight/*,int x,int y,int width,int height*/)const;

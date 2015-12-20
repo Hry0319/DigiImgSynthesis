@@ -52,8 +52,10 @@ MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2worl
 {
     int width           = 0;
     int height          = 0;
+    AreaWidth           = width;
+    AreaHeight          = height;
     RGBSpectrum *texels = NULL;
-    nSamples = ns;
+    nSamples            = ns;
 
     // Read texel data from _texmap_ into _texels_
     if (texmap != "") 
@@ -97,7 +99,6 @@ MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2worl
     //        img[u+v*width] *= sinTheta;
     //    }
     //}
-    AreaWidth = width;
     summedArea = (float*)malloc(sizeof(float)*width*height);
     for (int i=0;i<width*height;i++){
         summedArea[i]=0;
@@ -132,15 +133,14 @@ MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2worl
     float rgb[3];
     for(unsigned int index = 0; index < leafs.size(); index++)
     {
-        int area = (leafs[index]->Rect_width-leafs[index]->x)*(leafs[index]->Rect_height-leafs[index]->y);
+        int area = (leafs[index]->Rect_width - leafs[index]->x) * (leafs[index]->Rect_height - leafs[index]->y);
         leafs[index]->rgbspectrum = SummedAreaValue(leafs[index]->x, leafs[index]->y, leafs[index]->Rect_width, leafs[index]->Rect_height);
         leafs[index]->SummedValue = leafs[index]->rgbspectrum.y();
-        CaculateLights(leafs[index], texels);
-        //
         /*leafs[index]->rgbspectrum.ToRGB(rgb);
         rgb[0] = rgb[0]/area;
         rgb[1] = rgb[1]/area;
         rgb[2] = rgb[2]/area;*/
+        CaculateLights(leafs[index], texels);
     }
 }
 
@@ -166,7 +166,15 @@ void MedianCutEnvironmentLight::CaculateLights(MedianCutRect *mcr, RGBSpectrum *
     if(mcr->meanRGB[1] > 0)
         mcr->meanRGB[1] /= area;
     if(mcr->meanRGB[2] > 0)
-        mcr->meanRGB[2] /= area;
+        mcr->meanRGB[2] /= area;    
+        
+    const float phi = (mcr->Rect_width * 0.5f + mcr->x) / float(AreaWidth) * 2.f * M_PI;
+    const float theta = (mcr->Rect_height * 0.5f + mcr->y) / float(AreaHeight) * M_PI;
+    // Add Light
+    const float costheta = cosf(theta), sintheta = sinf(theta);
+    const float cosphi = cosf(phi), sinphi = sinf(phi);
+    float px = sintheta * cosphi, py = sintheta * sinphi, pz = costheta;
+    mcr->PointLight = Point(px,py,pz);
 }
 
 //RGBSpectrum SummedAreaValue(int x,int y,int width,int height)
@@ -291,44 +299,14 @@ Spectrum MedianCutEnvironmentLight::Power(const Scene *scene) const
 }
 
 
-Spectrum MedianCutEnvironmentLight::Le(const RayDifferential &r) const
-{
-    Vector wh = Normalize(WorldToLight(r.d));
-    float s = SphericalPhi(wh) * INV_TWOPI;
-    float t = SphericalTheta(wh) * INV_PI;
-
-    return Spectrum(radianceMap->Lookup(s, t), SPECTRUM_ILLUMINANT);
-}
-
-
-Spectrum MedianCutEnvironmentLight::Sample_L(const Point &p, float pEpsilon, const LightSample &ls, float time, Vector *wi, float *pdf, VisibilityTester *visibility) const 
-{
-    PBRT_INFINITE_LIGHT_STARTED_SAMPLE();
-    // Find $(u,v)$ sample coordinates in infinite light texture
-    float uv[2], mapPdf;
-    distribution->SampleContinuous(ls.uPos[0], ls.uPos[1], uv, &mapPdf);
-    if (mapPdf == 0.f) return 0.f;
-
-    // Convert infinite light sample point to direction
-    float theta = uv[1] * M_PI, phi = uv[0] * 2.f * M_PI;
-    float costheta = cosf(theta), sintheta = sinf(theta);
-    float sinphi = sinf(phi), cosphi = cosf(phi);
-    *wi = LightToWorld(Vector(sintheta * cosphi, sintheta * sinphi,
-                              costheta));
-
-    // Compute PDF for sampled infinite light direction
-    *pdf = mapPdf / (2.f * M_PI * M_PI * sintheta);
-    if (sintheta == 0.f) *pdf = 0.f;
-
-    // Return radiance value for infinite light direction
-    visibility->SetRay(p, pEpsilon, *wi, time);
-    Spectrum Ls = Spectrum(radianceMap->Lookup(uv[0], uv[1]),
-                           SPECTRUM_ILLUMINANT);
-    PBRT_INFINITE_LIGHT_FINISHED_SAMPLE();
-
-    return Ls;
-}
-
+//Spectrum MedianCutEnvironmentLight::Le(const RayDifferential &r) const
+//{
+//    Vector wh = Normalize(WorldToLight(r.d));
+//    float s = SphericalPhi(wh) * INV_TWOPI;
+//    float t = SphericalTheta(wh) * INV_PI;
+//
+//    return Spectrum(radianceMap->Lookup(s, t), SPECTRUM_ILLUMINANT);
+//}
 
 float MedianCutEnvironmentLight::Pdf(const Point &, const Vector &w) const 
 {
@@ -344,6 +322,33 @@ float MedianCutEnvironmentLight::Pdf(const Point &, const Vector &w) const
     return p;
 }
 
+Spectrum MedianCutEnvironmentLight::Sample_L(const Point &p, float pEpsilon, const LightSample &ls, float time, Vector *wi, float *pdf, VisibilityTester *visibility) const 
+{
+    PBRT_INFINITE_LIGHT_STARTED_SAMPLE();
+    // Find $(u,v)$ sample coordinates in infinite light texture
+    float uv[2], mapPdf;
+    //distribution->SampleContinuous(ls.uPos[0], ls.uPos[1], uv, &mapPdf);
+    //if (mapPdf == 0.f) return 0.f;
+
+    // Convert infinite light sample point to direction
+    float theta = uv[1] * M_PI, phi = uv[0] * 2.f * M_PI;
+    float costheta = cosf(theta), sintheta = sinf(theta);
+    float sinphi = sinf(phi), cosphi = cosf(phi);
+    *wi = LightToWorld(Vector(sintheta * cosphi, sintheta * sinphi,
+                              costheta));
+
+    // Compute PDF for sampled infinite light direction
+    //*pdf = mapPdf / (2.f * M_PI * M_PI * sintheta);
+    if (sintheta == 0.f) *pdf = 0.f;
+
+    // Return radiance value for infinite light direction
+    visibility->SetRay(p, pEpsilon, *wi, time);
+    Spectrum Ls = Spectrum(radianceMap->Lookup(uv[0], uv[1]),
+                           SPECTRUM_ILLUMINANT);
+    PBRT_INFINITE_LIGHT_FINISHED_SAMPLE();
+
+    return Ls;
+}
 
 Spectrum 
 MedianCutEnvironmentLight::Sample_L(
