@@ -46,10 +46,8 @@
 #include <vector>
 
 class MedianCutRect {
-    public:
-        MedianCutRect(){};
-    
-        MedianCutRect(void* _left, void* _right, int _x, int _y, int _Rect_width, int _Rect_height, float _SummedValue)
+    public: 
+        MedianCutRect(void* _left, void* _right, int _x, int _y, int _Rect_width, int _Rect_height, RGBSpectrum _rgbspectrum)
         {
             left        = _left;
             right       = _right;
@@ -57,25 +55,21 @@ class MedianCutRect {
             y           = _y;
             Rect_width  = _Rect_width;
             Rect_height = _Rect_height;
-            SummedValue = _SummedValue;    
-            meanRGB[0]  = 0;
-            meanRGB[1]  = 0;
-            meanRGB[2]  = 0;
-        }   
+            SummedRGB   = _rgbspectrum; 
+            SummedLum   = SummedRGB.y();
+            //rgbspectrum.ToRGB(meanRGB);
+        } 
         
-        void*   left;
-        void*   right;
-        int     x,y;
-        int     Rect_width,Rect_height;
-        float   SummedValue;    
-        float   meanRGB[3];
-        RGBSpectrum rgbspectrum;
+        void*       left;
+        void*       right;
+        int         x,y;
+        int         Rect_width,Rect_height;        
+        //float       meanRGB[3];
+        RGBSpectrum SummedRGB;
+        float       SummedLum;
 
         //centroid Point
-        Point   LightPoint;        
-    //private:
-        //void leaf();
-    
+        Point       LightPoint;     
 };
 
 class MedianCutEnvironmentLight : public Light {
@@ -88,25 +82,30 @@ class MedianCutEnvironmentLight : public Light {
         //Spectrum Le(const RayDifferential &r) const;
         Spectrum Sample_L(const Point &p, float pEpsilon, const LightSample &ls, float time, Vector *wi, float *pdf, VisibilityTester *visibility) const;
         Spectrum Sample_L(const Scene *scene, const LightSample &ls, float u1, float u2, float time, Ray *ray, Normal *Ns, float *pdf) const;
-
+        
         float Pdf(const Point &, const Vector &) const;   
         bool IsDeltaLight() const { return false; }
-        void AllocateSummedAreaTable(float *summedArea, unsigned int width, unsigned int height)const;
         
+        void SHProject(const Point &p, float pEpsilon, int lmax, const Scene *scene,
+                        bool computeLightVis, float time, RNG &rng, Spectrum *coeffs) const;
 
     private:
         //MIPMap<RGBSpectrum> *radianceMap;
         //Distribution2D *distribution;
-        float   *summedArea;
-        int     nSamples;
-        int     AreaWidth,AreaHeight;
-
-        void CaculateLights(MedianCutRect *mcr, RGBSpectrum *texels)const;
+        RGBSpectrum     *summedArea;
+        int             nSamples;
+        int             AreaWidth, AreaHeight;
+        
+        void InitSummedAreaTable(RGBSpectrum *summedArea, unsigned int width, unsigned int height)const;
         void CutCut(MedianCutRect *root, int nowTreeHeight/*,int x,int y,int width,int height*/)const;
+        void CaculateLights(MedianCutRect *mcr)const;
+
         RGBSpectrum SummedAreaValue(int x,int y,int width,int height)const
         {
             int x1 = x + width-1;
             int y1 = y + height-1;
+            //if(x1 > AreaWidth)x1 = AreaWidth;
+            //if(y1 > AreaHeight)y1 = AreaHeight;
             RGBSpectrum upper_left   = summedArea[x  + AreaWidth*y ];
             RGBSpectrum upper_right  = summedArea[x1 + AreaWidth*y ];
             RGBSpectrum button_left  = summedArea[x  + AreaWidth*y1];

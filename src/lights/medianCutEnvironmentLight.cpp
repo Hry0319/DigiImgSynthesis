@@ -1,4 +1,4 @@
-
+﻿
 /*
     pbrt source code Copyright(c) 1998-2012 Matt Pharr and Greg Humphreys.
 
@@ -37,19 +37,17 @@
 #include "montecarlo.h"
 #include "paramset.h"
 #include "imageio.h"
+#include <math.h>
 
 
 vector<MedianCutRect*> leafs;
 int     nowleafs;
 
-// MedianCutEnvironmentLight Method Definitions
 MedianCutEnvironmentLight::~MedianCutEnvironmentLight() {
-    //delete distribution;
-    //delete radianceMap;
     delete summedArea;
 }
 
-MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2world, const Spectrum &L, int ns, const string &texmap) : Light(light2world, ns) 
+MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2world, const Spectrum &L, int ns, const string &texmap) : Light(light2world, ns)
 {
     int width           = 0;
     int height          = 0;
@@ -57,7 +55,7 @@ MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2worl
     nSamples            = ns;
 
     // Read texel data from _texmap_ into _texels_
-    if (texmap != "") 
+    if (texmap != "")
     {
         texels = ReadImage(texmap, &width, &height);
         if (texels)
@@ -72,163 +70,31 @@ MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2worl
     AreaWidth           = width;
     AreaHeight          = height;
 
-    summedArea = (float*)malloc(sizeof(float)*width*height);
+    summedArea = new RGBSpectrum[width*height];
     for (int i=0;i<width*height;i++){
         summedArea[i]=0;
     }
-    //float rgb[3];
-    for(int index = 0; index < width*height; index++ ){
-        //texels[index].ToRGB(rgb);
-        //summedArea[index] = rgb[0]+rgb[1]+rgb[2];        
-        float vp = (float)(index/width) / (float)height;
-        float sinTheta = sinf(M_PI * float((index/width)+.5f)/float(height));
-        summedArea[index] = texels[index].y() * sinTheta;
+    for (int v = 0; v < height; ++v) {
+        float vp = (float)v / (float)height;
+        float sinTheta = sinf(M_PI * float(v+.5f)/float(height));
+        for (int u = 0; u < width; ++u) {
+            float up = (float)u / (float)width;
+            summedArea[u + v*width] = texels[u + v*width]/*.y()*/ * sinTheta;
+        }
     }
+    InitSummedAreaTable(summedArea,width,height);
 
-    AllocateSummedAreaTable(summedArea,width,height);
-
-    MedianCutRect *mcr = new MedianCutRect(NULL,NULL,0,0,width,height,summedArea[width*height]); 
-
+    MedianCutRect *mcr = new MedianCutRect(NULL, NULL, 0, 0, width, height, summedArea[width*height-1]);
     CutCut(mcr, 0);
-    
+
     for(unsigned int index = 0; index < leafs.size(); index++)
     {
-        leafs[index]->rgbspectrum = SummedAreaValue(leafs[index]->x, leafs[index]->y, leafs[index]->Rect_width, leafs[index]->Rect_height);
-
-        leafs[index]->SummedValue = leafs[index]->rgbspectrum.y();
-
-        CaculateLights(leafs[index], texels);
-
-        //leafs[index]->rgbspectrum *= leafs[index]->rgbspectrum.FromRGB(leafs[index]->meanRGB);
-        /*RGBSpectrum rgb;
-        rgb.FromRGB(leafs[index]->meanRGB);
-        leafs[index]->rgbspectrum *= rgb;*/
+        CaculateLights(leafs[index]);
     }
+    //delete mcr;
 }
 
-void MedianCutEnvironmentLight::CaculateLights(MedianCutRect *mcr, RGBSpectrum *texels)const
-{
-    int area = (mcr->Rect_width-mcr->x)*(mcr->Rect_height-mcr->y);
-    for (int y = mcr->y; y < mcr->Rect_height;y++)
-    {
-        for (int x = mcr->x; x < mcr->Rect_width;x++)
-        {
-            float rgb[3];
-            texels[x+y*AreaWidth].ToRGB(rgb);
-            if(rgb[0] > 0)
-                mcr->meanRGB[0] += rgb[0];
-            if(rgb[1] > 0)
-                mcr->meanRGB[1] += rgb[1];
-            if(rgb[2] > 0)
-                mcr->meanRGB[2] += rgb[2];
-        }
-    }
-    if(mcr->meanRGB[0] > 0)
-        mcr->meanRGB[0] /= area;
-    if(mcr->meanRGB[1] > 0)
-        mcr->meanRGB[1] /= area;
-    if(mcr->meanRGB[2] > 0)
-        mcr->meanRGB[2] /= area;
-      
-    // Light point
-    const float phi = (mcr->Rect_width * 0.5f + mcr->x) / float(AreaWidth) * 2.f * M_PI;
-    const float theta = (mcr->Rect_height * 0.5f + mcr->y) / float(AreaHeight) * M_PI;    
-    const float costheta = cosf(theta), sintheta = sinf(theta);
-    const float cosphi = cosf(phi), sinphi = sinf(phi);
-    float px = sintheta * cosphi, py = sintheta * sinphi, pz = costheta;
-    mcr->LightPoint = Point(px,py,pz);    
-}
-
-//RGBSpectrum SummedAreaValue(int x,int y,int width,int height)
-void MedianCutEnvironmentLight::CutCut( MedianCutRect *root, int nowTreeHeight/*,int x,int y,int width,int height*/ )const
-{
-    if (nowTreeHeight > Log2(nSamples))
-    {
-        return;
-    }
-    else
-    {
-        if(root->Rect_width > root->Rect_height)
-        {
-            float variance = SummedAreaValue(root->x, root->y, root->Rect_width, root->Rect_height).y();
-            int   medianCC = 0;
-            float leftRect, RightRect;
-            //RGBSpectrum  minL,minR;
-            for(int indexX = 1 ; indexX < root->Rect_width - 1; indexX++)
-            {
-                leftRect  = SummedAreaValue(
-                                root->x, 
-                                root->y, 
-                                indexX /*root->Rect_width*/, 
-                                root->Rect_height
-                                ).y();
-                RightRect = SummedAreaValue(
-                                root->x + indexX,
-                                root->y, 
-                                root->Rect_width - indexX -1,
-                                root->Rect_height
-                                ).y();
-                if (variance > abs(leftRect-RightRect))
-                {
-                    medianCC = indexX;
-                    variance = abs(leftRect-RightRect);
-
-                }
-            }
-            if(nowTreeHeight + 1 > Log2(nSamples))
-            {
-                leafs.push_back((MedianCutRect*)root);
-            }
-            else
-            {                
-                root->left  = new MedianCutRect(NULL, NULL, root->x, root->y, medianCC, root->Rect_height, 0);
-                CutCut((MedianCutRect*)root->left, nowTreeHeight + 1);
-                root->right = new MedianCutRect(NULL, NULL, root->x + medianCC, root->y, root->Rect_width - medianCC -1, root->Rect_height, 0);
-                CutCut((MedianCutRect*)root->right, nowTreeHeight + 1);
-            }
-
-        }
-        else
-        {
-            float variance = SummedAreaValue(root->x, root->y, root->Rect_width, root->Rect_height).y();
-            int   medianCC = 0;
-            float UpRect, ButtonRect;
-            for(int indexY = 1; indexY < root->Rect_height - 1; indexY++)
-            {
-                UpRect  = SummedAreaValue(
-                                root->x, 
-                                root->y, 
-                                root->Rect_width, 
-                                indexY
-                                ).y();
-                ButtonRect = SummedAreaValue(
-                                root->x,
-                                root->y + indexY, 
-                                root->Rect_width,
-                                root->Rect_height - indexY - 1
-                                ).y();
-                if (variance > abs(UpRect-ButtonRect))
-                {
-                    medianCC = indexY;
-                    variance = abs(UpRect-ButtonRect);
-                }
-            }
-            if(nowTreeHeight + 1 > Log2(nSamples))
-            {
-                leafs.push_back((MedianCutRect*)root);
-            }
-            else
-            {
-                root->left  = new MedianCutRect(NULL, NULL, root->x, root->y, root->Rect_width, medianCC, 0);
-                CutCut((MedianCutRect*)root->left, nowTreeHeight + 1);
-                root->right = new MedianCutRect(NULL, NULL, root->x, root->y + medianCC, root->Rect_width, root->Rect_height - medianCC - 1, 0);
-                CutCut((MedianCutRect*)root->right, nowTreeHeight + 1);
-            }
-        }
-    }
-}
-
-void MedianCutEnvironmentLight::AllocateSummedAreaTable(float *summedArea, unsigned int width, unsigned int height)const
+void MedianCutEnvironmentLight::InitSummedAreaTable(RGBSpectrum *summedArea, unsigned int width, unsigned int height)const
 {
     for(unsigned int i = 0; i < height; i++ )
     {
@@ -247,63 +113,166 @@ void MedianCutEnvironmentLight::AllocateSummedAreaTable(float *summedArea, unsig
             }
             else
             {
-                summedArea[_i_j] = summedArea[_i_j] + summedArea[_i_j-1] + summedArea[_i_j-width] -summedArea[_i_j-width-1]; 
+                summedArea[_i_j] = summedArea[_i_j] + summedArea[_i_j-1] + summedArea[_i_j-width] - summedArea[_i_j-width-1];
             }
         }
     }
 }
 
-Spectrum 
+void MedianCutEnvironmentLight::CutCut( MedianCutRect *root, int nowTreeHeight/*,int x,int y,int width,int height*/ )const
+{
+    if (nowTreeHeight > Log2(nSamples))
+    {
+        return;
+    }
+    else
+    {
+        if(root->Rect_width > root->Rect_height)
+        {
+            //float       variance = SummedAreaValue(root->x, root->y, root->Rect_width, root->Rect_height).y();
+            int         medianCC = 0;
+            RGBSpectrum leftRect, RightRect;
+
+            for(int indexX = 1 ; indexX < root->Rect_width - 1; indexX++)
+            {
+                leftRect  = SummedAreaValue(
+                                root->x, 
+                                root->y, 
+                                indexX, 
+                                root->Rect_height
+                                );
+                /*if (variance > abs(leftRect-RightRect))
+                {
+                    medianCC = indexX;
+                    variance = abs(leftRect-RightRect);
+                }*/                if (leftRect.y() >= root->SummedLum/2)                {                    medianCC = indexX;                    
+                    RightRect = SummedAreaValue(
+                                    root->x + indexX,
+                                    root->y, 
+                                    root->Rect_width - indexX -1,
+                                    root->Rect_height
+                                    );                    break;                }
+            }
+            if(nowTreeHeight + 1 > Log2(nSamples))
+            {
+                leafs.push_back((MedianCutRect*)root);
+            }
+            else
+            {                
+                root->left  = new MedianCutRect(NULL, NULL, root->x, root->y, medianCC, root->Rect_height, leftRect);
+                root->right = new MedianCutRect(NULL, NULL, root->x + medianCC, root->y, root->Rect_width - medianCC -1, root->Rect_height, RightRect);
+
+                CutCut((MedianCutRect*)root->left, nowTreeHeight + 1);
+                CutCut((MedianCutRect*)root->right, nowTreeHeight + 1);
+            }
+
+        }
+        else
+        {
+            //float variance        = SummedAreaValue(root->x, root->y, root->Rect_width, root->Rect_height).y();
+            int         medianCC = 0;
+            RGBSpectrum UpRect, ButtonRect;
+            for(int indexY = 1; indexY < root->Rect_height - 1; indexY++)
+            {
+                UpRect  = SummedAreaValue(
+                                root->x, 
+                                root->y, 
+                                root->Rect_width, 
+                                indexY
+                                );
+                /*if (variance > abs(UpRect-ButtonRect))
+                {
+                    medianCC = indexY;
+                    variance = abs(UpRect-ButtonRect);
+                }*/                if (UpRect.y() >= root->SummedLum/2)                {                    medianCC = indexY;
+
+                    ButtonRect = SummedAreaValue(
+                                        root->x,
+                                        root->y + indexY, 
+                                        root->Rect_width,
+                                        root->Rect_height - indexY - 1
+                                        );                    break;                }
+            }
+            if(nowTreeHeight + 1 > Log2(nSamples))
+            {
+                leafs.push_back((MedianCutRect*)root);
+            }
+            else
+            {
+                root->left  = new MedianCutRect(NULL, NULL, root->x, root->y, root->Rect_width, medianCC, UpRect);
+                root->right = new MedianCutRect(NULL, NULL, root->x, root->y + medianCC, root->Rect_width, root->Rect_height - medianCC - 1, ButtonRect);
+
+                CutCut((MedianCutRect*)root->left, nowTreeHeight + 1);
+                CutCut((MedianCutRect*)root->right, nowTreeHeight + 1);
+            }
+        }
+    }
+}
+
+
+void MedianCutEnvironmentLight::CaculateLights(MedianCutRect *mcr)const
+{
+    // Light point
+    const float phi = (mcr->Rect_width * 0.5f + mcr->x) / float(AreaWidth) * 2.f * M_PI;
+    const float theta = (mcr->Rect_height * 0.5f + mcr->y) / float(AreaHeight) * M_PI;
+    const float costheta = cosf(theta), sintheta = sinf(theta);
+    const float cosphi = cosf(phi), sinphi = sinf(phi);
+    float px = sintheta * cosphi, py = sintheta * sinphi, pz = costheta;
+    mcr->LightPoint = Point(px,py,pz);
+}
+
+Spectrum
 MedianCutEnvironmentLight::Sample_L(
                             const Point &p,
-                            float pEpsilon, 
+                            float pEpsilon,
                             const LightSample &ls,
-                            float time, 
-                            Vector *wi, 
-                            float *pdf, 
+                            float time,
+                            Vector *wi,
+                            float *pdf,
                             VisibilityTester *visibility
-                            ) const 
+                            ) const
 {
     int randomLightSampleNum = rand()%nSamples;
 
-    *wi = LightToWorld(Vector(leafs[randomLightSampleNum]->LightPoint));
-    visibility->SetRay(p, pEpsilon, *wi, time); 
+    *wi = Normalize( LightToWorld(Vector(leafs[randomLightSampleNum]->LightPoint)) );
+    visibility->SetRay(p, pEpsilon, *wi, time);
     *pdf = 1.f/nSamples;
-    Spectrum Ls = Spectrum(leafs[randomLightSampleNum]->rgbspectrum, SPECTRUM_ILLUMINANT);
+    Spectrum Ls = Spectrum(leafs[randomLightSampleNum]->SummedRGB, SPECTRUM_ILLUMINANT);
     return Ls;
 }
 
-Spectrum 
+Spectrum
 MedianCutEnvironmentLight::Sample_L(
                             const Scene *scene,
                             const LightSample &ls,
-                            float u1, 
-                            float u2, 
+                            float u1,
+                            float u2,
                             float time,
                             Ray *ray,
-                            Normal *Ns, 
+                            Normal *Ns,
                             float *pdf
-                            ) const 
+                            ) const
 {
     int randomLightSampleNum = rand()%nSamples;
     nowleafs = randomLightSampleNum;
-    
+
     Point lightPos = LightToWorld(leafs[randomLightSampleNum]->LightPoint);
     *ray = Ray(lightPos, - Normalize(Vector(lightPos)), 0.f, INFINITY, time);
     *Ns = (Normal)ray->d;
-    *pdf = UniformSpherePdf();
-    Spectrum Ls = Spectrum(leafs[randomLightSampleNum]->rgbspectrum, SPECTRUM_ILLUMINANT);
+    //*pdf = UniformSpherePdf();
+    *pdf = 1.f/nSamples;
+    Spectrum Ls = Spectrum(leafs[randomLightSampleNum]->SummedRGB, SPECTRUM_ILLUMINANT);
     return Ls;
 }
 
-float MedianCutEnvironmentLight::Pdf(const Point &, const Vector &w) const 
+float MedianCutEnvironmentLight::Pdf(const Point &, const Vector &w) const
 {
     //return 1.f/nSamples;
     return 0.0f;
 }
 
-Spectrum MedianCutEnvironmentLight::Power(const Scene *scene) const 
-{    
+Spectrum MedianCutEnvironmentLight::Power(const Scene *scene) const
+{
     return Spectrum(SummedAreaValue(0, 0,AreaWidth, AreaHeight), SPECTRUM_ILLUMINANT)/nSamples;
     //return Spectrum(SummedAreaValue(leafs[nowleafs]->x, leafs[nowleafs]->y, leafs[nowleafs]->Rect_width, leafs[nowleafs]->Rect_height), SPECTRUM_ILLUMINANT);
     //return Spectrum(leafs[nowleafs]->rgbspectrum, SPECTRUM_ILLUMINANT);
@@ -318,6 +287,32 @@ Spectrum MedianCutEnvironmentLight::Power(const Scene *scene) const
 //    return Spectrum(radianceMap->Lookup(s, t), SPECTRUM_ILLUMINANT);
 //}
 
+void MedianCutEnvironmentLight::SHProject(const Point &p, float pEpsilon,
+        int lmax, const Scene *scene, bool computeLightVis,
+        float time, RNG &rng, Spectrum *coeffs) const
+{
+  for (int i = 0; i < SHTerms(lmax); ++i)
+    coeffs[i] = 0.f;
+
+  Point worldCenter;
+  float worldRadius;
+  scene->WorldBound().BoundingSphere(&worldCenter, &worldRadius);
+
+  for (int light_id = 0; light_id < leafs.size(); ++light_id) {
+      Point lightPos = LightToWorld(leafs[light_id]->LightPoint);
+    if (computeLightVis &&
+        scene->IntersectP(Ray(p, Normalize(Vector(lightPos)), pEpsilon,
+                              INFINITY, time)))
+      continue;
+    // Project point light source to SH
+    float *Ylm = ALLOCA(float, SHTerms(lmax));
+    Vector wi = Normalize(Vector(lightPos));
+    SHEvaluate(wi, lmax, Ylm);
+    Spectrum Li = Spectrum(leafs[light_id]->SummedRGB * nSamples / 128, SPECTRUM_ILLUMINANT);
+    for (int i = 0; i < SHTerms(lmax); ++i)
+      coeffs[i] += Li * Ylm[i];
+  }
+}
 //void MedianCutEnvironmentLight::SHProject(const Point &p, float pEpsilon,
 //        int lmax, const Scene *scene, bool computeLightVis,
 //        float time, RNG &rng, Spectrum *coeffs) const {
@@ -377,18 +372,18 @@ Spectrum MedianCutEnvironmentLight::Power(const Scene *scene) const
 //}
 
 
-MedianCutEnvironmentLight 
+MedianCutEnvironmentLight
 *CreateMedianCutEnvironmentLight(
     const Transform &light2world,
     const ParamSet &paramSet
-    ) 
+    )
 {
     Spectrum L          = paramSet.FindOneSpectrum("L", Spectrum(1.0));
     Spectrum sc         = paramSet.FindOneSpectrum("scale", Spectrum(1.0));
     string   texmap     = paramSet.FindOneFilename("mapname", "");
     int      nSamples   = paramSet.FindOneInt("nsamples", 1);
 
-    if (PbrtOptions.quickRender) 
+    if (PbrtOptions.quickRender)
         nSamples = max(1, nSamples / 4);
 
     return new MedianCutEnvironmentLight(light2world, L * sc, nSamples, texmap);
