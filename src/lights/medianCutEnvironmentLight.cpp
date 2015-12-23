@@ -45,6 +45,8 @@ int     nowleafs;
 
 MedianCutEnvironmentLight::~MedianCutEnvironmentLight() {
     delete summedArea;
+    delete distribution;
+    MedianCutRect::deleteMcr(mcr);
 }
 
 MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2world, const Spectrum &L, int ns, const string &texmap) : Light(light2world, ns)
@@ -71,6 +73,7 @@ MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2worl
     AreaHeight          = height;
 
     summedArea = new RGBSpectrum[width*height];
+    float *img  = new float[width*height];
     for (int i=0;i<width*height;i++){
         summedArea[i]=0;
     }
@@ -80,13 +83,15 @@ MedianCutEnvironmentLight::MedianCutEnvironmentLight(const Transform &light2worl
         for (int u = 0; u < width; ++u) {
             float up = (float)u / (float)width;
             summedArea[u + v*width] = texels[u + v*width]/*.y()*/ * sinTheta;
+            img[u + v*width] = texels[u + v*width].y() * sinTheta;
         }
-    }
+    }   
+    // Compute sampling distributions for rows and columns of image
+    distribution = new Distribution2D(img, width, height);
     InitSummedAreaTable(summedArea,width,height);
 
-    MedianCutRect *mcr = new MedianCutRect(NULL, NULL, 0, 0, width, height, summedArea[width*height-1]);
-    CutCut(mcr, 0);    
-    delete mcr;
+    mcr = new MedianCutRect(NULL, NULL, 0, 0, width, height, summedArea[width*height-1]);
+    CutCut(mcr, 0); 
 
     for(unsigned int index = 0; index < leafs.size(); index++)
     {
@@ -233,13 +238,26 @@ MedianCutEnvironmentLight::Sample_L(
                             VisibilityTester *visibility
                             ) const
 {
-    int randomLightSampleNum = rand()%nSamples;
+    //int randomLightSampleNum = rand()%nSamples;
+    int randomLightSampleNum = static_cast<int>(ls.uPos[0] * nSamples) % leafs.size();
+
+    //float uv[2], mapPdf;
+    //distribution->SampleContinuous(ls.uPos[0], ls.uPos[1], uv, &mapPdf);
+    ////if (mapPdf == 0.f) return 0.f;
+    //for(unsigned int index = 0; index < leafs.size(); index++)
+    //{
+    //    int x1 = leafs[index]->x;
+    //    int x2 = leafs[index]->x + leafs[index]->Rect_width;
+    //    int y1 = leafs[index]->y;
+    //    int y2 = leafs[index]->y + leafs[index]->Rect_height;
+    //    if(uv[0] >= x1 && uv[0] <= x2 && uv[1] >= y1 && uv[1] <= y2)
+    //        randomLightSampleNum = index;
+    //}
 
     *wi = Normalize( LightToWorld(Vector(leafs[randomLightSampleNum]->LightPoint)) );
     visibility->SetRay(p, pEpsilon, *wi, time);
     *pdf = 1.f/*/nSamples*/;
-    Spectrum Ls = Spectrum(leafs[randomLightSampleNum]->SummedRGB, SPECTRUM_ILLUMINANT);
-    return Ls;
+    return Spectrum(leafs[randomLightSampleNum]->SummedRGB, SPECTRUM_ILLUMINANT);
 }
 
 Spectrum
@@ -254,16 +272,17 @@ MedianCutEnvironmentLight::Sample_L(
                             float *pdf
                             ) const
 {
-    int randomLightSampleNum = rand()%nSamples;
-    nowleafs = randomLightSampleNum;
+    //int randomLightSampleNum = rand()%nSamples;
+    //nowleafs = randomLightSampleNum;
 
-    Point lightPos = LightToWorld(leafs[randomLightSampleNum]->LightPoint);
-    *ray = Ray(lightPos, - Normalize(Vector(lightPos)), 0.f, INFINITY, time);
-    *Ns = (Normal)ray->d;
-    //*pdf = UniformSpherePdf();
-    *pdf = 1.f/nSamples;
-    Spectrum Ls = Spectrum(leafs[randomLightSampleNum]->SummedRGB, SPECTRUM_ILLUMINANT);
-    return Ls;
+    //Point lightPos = LightToWorld(leafs[randomLightSampleNum]->LightPoint);
+    //*ray = Ray(lightPos, - Normalize(Vector(lightPos)), 0.f, INFINITY, time);
+    //*Ns = (Normal)ray->d;
+    ////*pdf = UniformSpherePdf();
+    //*pdf = 1.f/nSamples;
+    //Spectrum Ls = Spectrum(leafs[randomLightSampleNum]->SummedRGB, SPECTRUM_ILLUMINANT);
+    //return Ls;
+    return 0;
 }
 
 Spectrum MedianCutEnvironmentLight::Power(const Scene *scene) const
@@ -288,44 +307,18 @@ MedianCutEnvironmentLight
     return new MedianCutEnvironmentLight(light2world, L * sc, nSamples, texmap);
 }
 
+//float MedianCutEnvironmentLight::Pdf(const Point &, const Vector &w) const {
+//    PBRT_INFINITE_LIGHT_STARTED_PDF();
+//    Vector wi = WorldToLight(w);
+//    float theta = SphericalTheta(wi), phi = SphericalPhi(wi);
+//    float sintheta = sinf(theta);
+//    if (sintheta == 0.f) return 0.f;
+//    float p = distribution->Pdf(phi * INV_TWOPI, theta * INV_PI) / (2.f * M_PI * M_PI * sintheta);
+//    PBRT_INFINITE_LIGHT_FINISHED_PDF();
+//    return p;
+//}
 float MedianCutEnvironmentLight::Pdf(const Point &, const Vector &w) const
 {
     //return 1.f/nSamples;
     return 0.0f;
 }
-
-//Spectrum MedianCutEnvironmentLight::Le(const RayDifferential &r) const
-//{
-//    Vector wh = Normalize(WorldToLight(r.d));
-//    float s = SphericalPhi(wh) * INV_TWOPI;
-//    float t = SphericalTheta(wh) * INV_PI;
-//
-//    return Spectrum(radianceMap->Lookup(s, t), SPECTRUM_ILLUMINANT);
-//}
-
-//void MedianCutEnvironmentLight::SHProject(const Point &p, float pEpsilon,
-//        int lmax, const Scene *scene, bool computeLightVis,
-//        float time, RNG &rng, Spectrum *coeffs) const
-//{
-//  for (int i = 0; i < SHTerms(lmax); ++i)
-//    coeffs[i] = 0.f;
-//
-//  Point worldCenter;
-//  float worldRadius;
-//  scene->WorldBound().BoundingSphere(&worldCenter, &worldRadius);
-//
-//  for (int light_id = 0; light_id < leafs.size(); ++light_id) {
-//      Point lightPos = LightToWorld(leafs[light_id]->LightPoint);
-//    if (computeLightVis &&
-//        scene->IntersectP(Ray(p, Normalize(Vector(lightPos)), pEpsilon,
-//                              INFINITY, time)))
-//      continue;
-//    // Project point light source to SH
-//    float *Ylm = ALLOCA(float, SHTerms(lmax));
-//    Vector wi = Normalize(Vector(lightPos));
-//    SHEvaluate(wi, lmax, Ylm);
-//    Spectrum Li = Spectrum(leafs[light_id]->SummedRGB * nSamples / 128, SPECTRUM_ILLUMINANT);
-//    for (int i = 0; i < SHTerms(lmax); ++i)
-//      coeffs[i] += Li * Ylm[i];
-//  }
-//}
