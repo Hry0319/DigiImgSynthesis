@@ -60,6 +60,13 @@ class MedianCutRect {
             //rgbspectrum.ToRGB(meanRGB);
         } 
         
+        ~MedianCutRect()
+        {
+            /*delete this->left;
+            delete this->right;
+            delete this;*/
+        }
+        
         void*       left;
         void*       right;
         int         x,y;
@@ -69,7 +76,20 @@ class MedianCutRect {
         float       SummedLum;
 
         //centroid Point
-        Point       LightPoint;     
+        Point       LightPoint;    
+
+        static void deleteMcr(MedianCutRect *mcr)
+        {
+            if (mcr->left == NULL && mcr->right == NULL)
+            {
+                delete mcr;
+                return;
+            }
+            //if (mcr->left != NULL)
+                deleteMcr((MedianCutRect*)mcr->left);
+            //if (mcr->right != NULL)
+                deleteMcr((MedianCutRect*)mcr->right);
+        }
 };
 
 class MedianCutEnvironmentLight : public Light {
@@ -91,8 +111,9 @@ class MedianCutEnvironmentLight : public Light {
 
     private:
         //MIPMap<RGBSpectrum> *radianceMap;
-        //Distribution2D *distribution;
+        Distribution2D *distribution;
         RGBSpectrum     *summedArea;
+        MedianCutRect   *mcr;
         int             nSamples;
         int             AreaWidth, AreaHeight;
         
