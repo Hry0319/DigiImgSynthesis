@@ -33,56 +33,39 @@
 #pragma once
 #endif
 
-#ifndef PBRT_FILM_IMAGE_H
-#define PBRT_FILM_IMAGE_H
+#ifndef PBRT_FILTERS_NLMEAN_H
+#define PBRT_FILTERS_NLMEAN_H
 
-// film/image.h*
-#include "pbrt.h"
-#include "film.h"
-#include "sampler.h"
+// filters/NLmean.h*
 #include "filter.h"
-#include "paramset.h"
 
-// ImageFilm Declarations
-class ImageFilm : public Film {
+// NL-Mean Filter Declarations
+class NLMeanFilter : public Filter {
 public:
-    // ImageFilm Public Methods
-    ImageFilm(int xres, int yres, Filter *filt, const float crop[4],
-              const string &filename, bool openWindow, const string filtername);
-    ~ImageFilm() {
-        delete pixels;
-        delete filter;
-        delete[] filterTable;
-    }
-    void AddSample(const CameraSample &sample, const Spectrum &L);
-    void Splat(const CameraSample &sample, const Spectrum &L);
-    void GetSampleExtent(int *xstart, int *xend, int *ystart, int *yend) const;
-    void GetPixelExtent(int *xstart, int *xend, int *ystart, int *yend) const;
-    void WriteImage(float splatScale);
-    void UpdateDisplay(int x0, int y0, int x1, int y1, float splatScale);
-private:
-    // ImageFilm Private Data
-    Filter *filter;
-    float cropWindow[4];
-    string filename;
-    int xPixelStart, yPixelStart, xPixelCount, yPixelCount;
-    struct Pixel {
-        Pixel() {
-            for (int i = 0; i < 3; ++i) Lxyz[i] = splatXYZ[i] = 0.f;
-            weightSum = 0.f;
-        }
-        float Lxyz[3];
-        float weightSum;
-        float splatXYZ[3];
-        float pad;
-    };
-    BlockedArray<Pixel> *pixels;
-    float *filterTable;
+    // Non-local Mean Filter Public Methods
+    NLMeanFilter(float r, float f, float k, float a)
+        : Filter(r, r), alpha(a), f(f) , k(k), r(r){
 
-    string filtername;
+	}
+
+    float Evaluate(float x, float y) const;
+
+	void NLFiltering(float * rgb, int xPixelCount, int yPixelCount);
+
+	
+	void NLMeanFilter::InitSummedAreaRGBTable(float *summedArea, unsigned int width, unsigned int height, unsigned int rgb)const;
+
+private:
+    // Non-local Mean Filter Private Data
+    const float alpha;
+    const float f;
+	const float k;
+	const float r;
+	//const float epslon = 1e-10;
+
 };
 
 
-ImageFilm *CreateImageFilm(const ParamSet &params, Filter *filter);
+NLMeanFilter *CreateNLMeanFilter(const ParamSet &ps);
 
-#endif // PBRT_FILM_IMAGE_H
+#endif // PBRT_FILTERS_NLMean_H

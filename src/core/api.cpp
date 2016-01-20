@@ -56,6 +56,7 @@
 #include "filters/mitchell.h"
 #include "filters/sinc.h"
 #include "filters/triangle.h"
+#include "filters/NLmean.h"  // final
 #include "integrators/ambientocclusion.h"
 #include "integrators/diffuseprt.h"
 #include "integrators/dipolesubsurface.h"
@@ -663,6 +664,8 @@ Filter *MakeFilter(const string &name,
         filter = CreateSincFilter(paramSet);
     else if (name == "triangle")
         filter = CreateTriangleFilter(paramSet);
+	else if (name == "NL")
+		filter = CreateNLMeanFilter(paramSet);
     else
         Warning("Filter \"%s\" unknown.", name.c_str());
     paramSet.ReportUnused();

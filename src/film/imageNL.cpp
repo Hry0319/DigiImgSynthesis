@@ -36,17 +36,14 @@
 #include "spectrum.h"
 #include "parallel.h"
 #include "imageio.h"
-#include "filters/NLmean.h"
 
 // ImageFilm Method Definitions
 ImageFilm::ImageFilm(int xres, int yres, Filter *filt, const float crop[4],
-                     const string &fn, bool openWindow, const string filtername)
+                     const string &fn, bool openWindow)
     : Film(xres, yres) {
     filter = filt;
     memcpy(cropWindow, crop, 4 * sizeof(float));
     filename = fn;
-	this->filtername = filtername;
-
     // Compute film image extent
     xPixelStart = Ceil2Int(xResolution * cropWindow[0]);
     xPixelCount = max(1, Ceil2Int(xResolution * cropWindow[1]) - xPixelStart);
@@ -113,7 +110,6 @@ void ImageFilm::AddSample(const CameraSample &sample,
                          filter->invYWidth * FILTER_TABLE_SIZE);
         ify[y-y0] = min(Floor2Int(fy), FILTER_TABLE_SIZE-1);
     }
-	
     bool syncNeeded = (filter->xWidth > 0.5f || filter->yWidth > 0.5f);
     for (int y = y0; y <= y1; ++y) {
         for (int x = x0; x <= x1; ++x) {
@@ -123,38 +119,19 @@ void ImageFilm::AddSample(const CameraSample &sample,
 
             // Update pixel values with filtered sample contribution
             Pixel &pixel = (*pixels)(x - xPixelStart, y - yPixelStart);
-			
-			if(filtername != "NL"){
-				if (!syncNeeded) {
-					pixel.Lxyz[0] += filterWt * xyz[0];
-					pixel.Lxyz[1] += filterWt * xyz[1];
-					pixel.Lxyz[2] += filterWt * xyz[2];
-					pixel.weightSum += filterWt;
-				}
-				else {
-					// Safely update _Lxyz_ and _weightSum_ even with concurrency
-					AtomicAdd(&pixel.Lxyz[0], filterWt * xyz[0]);
-					AtomicAdd(&pixel.Lxyz[1], filterWt * xyz[1]);
-					AtomicAdd(&pixel.Lxyz[2], filterWt * xyz[2]);
-					AtomicAdd(&pixel.weightSum, filterWt);
-				}
-			}
-			else
-			{
-				if (!syncNeeded) {
-					pixel.Lxyz[0] +=  xyz[0];
-					pixel.Lxyz[1] +=  xyz[1];
-					pixel.Lxyz[2] +=  xyz[2];
-					pixel.weightSum = 1;
-				}
-				else {
-					// Safely update _Lxyz_ and _weightSum_ even with concurrency
-					AtomicAdd(&pixel.Lxyz[0],  xyz[0]);
-					AtomicAdd(&pixel.Lxyz[1],  xyz[1]);
-					AtomicAdd(&pixel.Lxyz[2],  xyz[2]);
-					AtomicAdd(&pixel.weightSum, filterWt);
-				}
-			}
+            if (!syncNeeded) {
+                pixel.Lxyz[0] += filterWt * xyz[0];
+                pixel.Lxyz[1] += filterWt * xyz[1];
+                pixel.Lxyz[2] += filterWt * xyz[2];
+                pixel.weightSum += filterWt;
+            }
+            else {
+                // Safely update _Lxyz_ and _weightSum_ even with concurrency
+                AtomicAdd(&pixel.Lxyz[0], filterWt * xyz[0]);
+                AtomicAdd(&pixel.Lxyz[1], filterWt * xyz[1]);
+                AtomicAdd(&pixel.Lxyz[2], filterWt * xyz[2]);
+                AtomicAdd(&pixel.weightSum, filterWt);
+            }
         }
     }
 }
@@ -227,11 +204,6 @@ void ImageFilm::WriteImage(float splatScale) {
         }
     }
 
-	if(filtername == "NL"){
-		NLMeanFilter *NLmean = (NLMeanFilter*)filter;
-		NLmean->NLFiltering(rgb, xPixelCount, yPixelCount);
-	}
-
     // Write RGB image
     ::WriteImage(filename, rgb, NULL, xPixelCount, yPixelCount,
                  xResolution, yResolution, xPixelStart, yPixelStart);
@@ -282,9 +254,7 @@ ImageFilm *CreateImageFilm(const ParamSet &params, Filter *filter) {
         crop[3] = Clamp(max(cr[2], cr[3]), 0., 1.);
     }
 
-	string filtername = params.FindOneString("filtername", "");
-
-    return new ImageFilm(xres, yres, filter, crop, filename, openwin, filtername);
+    return new ImageFilm(xres, yres, filter, crop, filename, openwin);
 }
 
 

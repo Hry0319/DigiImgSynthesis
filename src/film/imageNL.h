@@ -48,7 +48,7 @@ class ImageFilm : public Film {
 public:
     // ImageFilm Public Methods
     ImageFilm(int xres, int yres, Filter *filt, const float crop[4],
-              const string &filename, bool openWindow, const string filtername);
+              const string &filename, bool openWindow);
     ~ImageFilm() {
         delete pixels;
         delete filter;
@@ -78,8 +78,6 @@ private:
     };
     BlockedArray<Pixel> *pixels;
     float *filterTable;
-
-    string filtername;
 };
 
 
