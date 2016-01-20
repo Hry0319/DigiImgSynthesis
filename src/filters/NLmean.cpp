@@ -41,14 +41,17 @@ float NLMeanFilter::Evaluate(float x, float y) const {
     return 1.f;
 }
 
-void NLMeanFilter::NLFiltering(float * rgb, int xPixelCount, int yPixelCount){
+float* NLMeanFilter::NLFiltering(float * rgb, int xPixelCount, int yPixelCount){
 	
-	//int offset;
-	int xMin, xMax, yMin, yMax;
-
 	int nPix = xPixelCount * yPixelCount;
 
-	float *RGBSumareaTable = new float[nPix*3];
+	float *outRGB = new float[3*nPix];
+   
+	//int offset;
+	//int xMin, xMax, yMin, yMax;
+
+	
+	RGBSumareaTable = new float[nPix*3];
 
 	for (int index = 0; index < nPix; index++)
 	{
@@ -58,39 +61,123 @@ void NLMeanFilter::NLFiltering(float * rgb, int xPixelCount, int yPixelCount){
 	}
 
 	//-------- sumareatable ------------------------
-	InitSummedAreaRGBTable(RGBSumareaTable , xPixelCount*3, yPixelCount, 0);
-	InitSummedAreaRGBTable(RGBSumareaTable , xPixelCount*3, yPixelCount, 1);
-	InitSummedAreaRGBTable(RGBSumareaTable , xPixelCount*3, yPixelCount, 2);
+	InitSummedAreaRGBTable(RGBSumareaTable , xPixelCount, yPixelCount, 0);
+	InitSummedAreaRGBTable(RGBSumareaTable , xPixelCount, yPixelCount, 1);
+	InitSummedAreaRGBTable(RGBSumareaTable , xPixelCount, yPixelCount, 2);
 	//----------------------------------------------
 
-	float dis[3]  = {0.0f, 0.0f, 0.0f};
-	float mean[3] = {0.0f, 0.0f, 0.0f};
+	//float *dis = new float[nPix*3];
+	float *mean = new float[nPix*3];
+	float *var  = new float[nPix*3];
+
+	float patchArea = (2*f+1)*(2*f+1);
+	
+
+	//----------- calculate Var[p] --------------------//
+	for (int y = 0; y < yPixelCount ; y++)
+	{
+		for (int x = 0; x < xPixelCount; x++)
+		{
+			int index = x + y*xPixelCount;
+			
+			mean[index*3     ] = SummedAreaValue(x , y, xPixelCount, yPixelCount, 0) / patchArea;
+			mean[index*3 + 1 ] = SummedAreaValue(x , y, xPixelCount, yPixelCount, 1) / patchArea;
+			mean[index*3 + 2 ] = SummedAreaValue(x , y, xPixelCount, yPixelCount, 2) / patchArea;
+
+			var[index*3 ] = 0;
+			var[index*3 + 1] = 0;
+			var[index*3 + 2] = 0;
+
+			
+			for (int py = -r; py <= r ; py++)
+			{
+				for (int px = -r; px <= r ; px++)
+				{ 
+					if( (x+px) >= 0 && (y+py) >= 0 && (x+px) < xPixelCount && (y+py) < yPixelCount)
+					{
+						var[index*3     ] += rgb[(x+px + (y+py)*xPixelCount)*3    ] - mean[index*3];
+						var[index*3 + 1 ] += rgb[(x+px + (y+py)*xPixelCount)*3 + 1] - mean[index*3+1];
+						var[index*3 + 2 ] += rgb[(x+px + (y+py)*xPixelCount)*3 + 2] - mean[index*3+2];
+					}					
+				}
+			}
+			var[index*3     ] /= patchArea;
+			var[index*3 + 1 ] /= patchArea;
+			var[index*3 + 2 ] /= patchArea;
+			
+			
+		}
+	}
+
+	float weight, totalW;
+	float dis;
+	
+	int qx, qy;
 
 	for (int y = 0; y < yPixelCount ; y++)
 	{
 		for (int x = 0; x < xPixelCount; x++)
 		{
-			for (int i = 0; i < 2*r+1 ; i++)
-			{
-				for (int j = 0; j < 2*r+1; j++)
-				{
+			int index = x + y*xPixelCount;
+			
+			// filter at p
+			totalW = 0;
+			//outRGB = {};
+			
+			outRGB[index*3    ] = 0;
+			outRGB[index*3 + 1] = 0;
+			outRGB[index*3 + 2] = 0;
 
+			for (int fy = -f; fy <= f ; fy++)
+			{
+				for (int fx = -f; fx <= f ; fx++)
+				{
+					qx = x + fx;
+					qy = y + fy;
+					
+					if( (qx) >= 0 && (qy) >= 0 && (qx) < xPixelCount && (qy) < yPixelCount)
+					{
+						dis = 0;
+						//for each patch q
+						for (int py = -r; py <= r ; py++)
+						{
+							for (int px = -r; px <= r ; px++)
+							{
+								for(int i = 0; i < 3 ; i++)
+								{				
+									if( ( (x+px) >= 0 && (y+py) >= 0 && (x+px) < xPixelCount && (y+py) < yPixelCount) &&
+										( (qx+px) >= 0 && (qy+py) >= 0 && (qx+px) < xPixelCount && (qy+py) < yPixelCount)  
+									){
+										int indexP = (x+px + (y+py)*xPixelCount)*3 + i;
+										int indexQ = (qx+px + (qy+py)*xPixelCount)*3 + i;
+
+										int m = min(var[indexP], var[indexQ]);
+							
+										dis += (pow(rgb[indexP]-rgb[indexQ] , 2) 
+													- alpha*(var[indexP] - m) ) / (epslon+ k*k*(var[indexP] + var[indexQ]));													
+									}
+								}
+							}
+						}
+					
+						dis /= (3*(2*f+1)*(2*f+1));
+						weight = exp(-1* max(0.f, dis));
+						totalW += weight;
+
+						outRGB[index*3 ] += rgb[(qx + qy*xPixelCount)*3 ] * weight;
+						outRGB[index*3 + 1] += rgb[(qx + qy*xPixelCount)*3 + 1] * weight;
+						outRGB[index*3 + 2] += rgb[(qx + qy*xPixelCount)*3 + 2] * weight;
+					}
 				}
 			}
-		}
-	}
-
-	for(int y = 0; y < yPixelCount ; y++){
-		for(int x = 0; x < xPixelCount; x++){
-			xMin = max(0, (int) (x-r));
-			xMax = min(0, (int) (x+r));
-			yMin = max(0, (int) (y-r));
-			yMax = min(0, (int) (y+r));
-
-			
+			outRGB[index*3 ] /= totalW ; 
+			outRGB[index*3 + 1] /= totalW ; 
+			outRGB[index*3 + 2] /= totalW ; 
 
 		}
 	}
+
+	return outRGB ;
 }
 
 void NLMeanFilter::InitSummedAreaRGBTable(float *summedArea, unsigned int width, unsigned int height, unsigned int rgb)const
@@ -99,21 +186,17 @@ void NLMeanFilter::InitSummedAreaRGBTable(float *summedArea, unsigned int width,
     {
         for(unsigned int j = 0; j < width; j++)
         {
-            int index = i*width + j*3 + rgb;
-            if(i==0)
-            {
-                if(j!=0)
-                    summedArea[index] += summedArea[index - 3];
-            }
-            else if(j==0)
-            {
-                if(i!=0)
-                    summedArea[index] += summedArea[index - width];
-            }
-            else
-            {
-                summedArea[index] = summedArea[index] + summedArea[index-3] + summedArea[index-width] - summedArea[index-width-3];
-            }
+			int index = (i*width + j)*3 + rgb;
+
+			if(i==0 && j==0){
+				summedArea[index] = summedArea[index];
+			}else if(i==0 && j!=0){
+				summedArea[index] = summedArea[index-3] + summedArea[index];
+			}else if(i!=0 && j==0){
+				summedArea[index] = summedArea[index-width*3] + summedArea[index];
+			}else{
+				summedArea[index] = summedArea[index-3] + summedArea[index-width*3] - summedArea[index-3-width*3] + summedArea[index];
+			}
         }
     }
 }

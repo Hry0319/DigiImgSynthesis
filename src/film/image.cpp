@@ -202,6 +202,7 @@ void ImageFilm::WriteImage(float splatScale) {
     // Convert image to RGB and compute final pixel values
     int nPix = xPixelCount * yPixelCount;
     float *rgb = new float[3*nPix];
+    float *frgb = new float[3*nPix];
     int offset = 0;
     for (int y = 0; y < yPixelCount; ++y) {
         for (int x = 0; x < xPixelCount; ++x) {
@@ -229,11 +230,15 @@ void ImageFilm::WriteImage(float splatScale) {
 
 	if(filtername == "NL"){
 		NLMeanFilter *NLmean = (NLMeanFilter*)filter;
-		NLmean->NLFiltering(rgb, xPixelCount, yPixelCount);
+		frgb = NLmean->NLFiltering(rgb, xPixelCount, yPixelCount);
 	}
-
+	else
+	{
+		frgb = rgb;
+	}
+	
     // Write RGB image
-    ::WriteImage(filename, rgb, NULL, xPixelCount, yPixelCount,
+    ::WriteImage(filename, frgb, NULL, xPixelCount, yPixelCount,
                  xResolution, yResolution, xPixelStart, yPixelStart);
 
     // Release temporary image memory
