@@ -5,6 +5,7 @@
  * Created on March 16, 2012, 3:42 PM
  */
 
+#include "StdAfx.h"
 #include "dualsampler.h"
 
 #include <vector>
@@ -55,7 +56,7 @@ DualSampler::DualSampler(const DualSampler *parent, int xstart,
 // the actual jobs, while the "main" sampler only distributes the workload.
 // This version of the sampler uses a sampling map to drive the sampling.
 DualSampler::DualSampler(const DualSampler *parent, int xstart,
-    int xend, int ystart, int yend, ImageBuffer &samplingMap,
+    int xend, int ystart, int yend, float *samplingMap,
     NlmeansScramblingInfo *scrambling)
     : Sampler(parent->xPixelStart, parent->xPixelEnd, parent->yPixelStart,
       parent->yPixelEnd, parent->samplesPerPixel, parent->shutterOpen,
@@ -82,7 +83,7 @@ DualSampler::DualSampler(const DualSampler *parent, int xstart,
     _sppErr = 0.f;
     
     // Keep a pointer to the sampling map. It will be freed by the main sampler.
-    _samplingMapA = &samplingMap;
+    _samplingMapA = samplingMap;
     
     _isMainSampler = false;
     
@@ -145,8 +146,8 @@ void DualSampler::initBase(const DualSampler * parent, bool firstPass) {
         int nPixInit = (xPixelEnd-xPixelStart) * (yPixelEnd-yPixelStart);
         _scramblingA = new NlmeansScramblingInfo[nPixInit];
         _scramblingB = new NlmeansScramblingInfo[nPixInit];
-        _samplingMapA = new ImageBuffer();
-        _samplingMapB = new ImageBuffer();
+        _samplingMapA = new float[nPixInit];
+        _samplingMapB = new float[nPixInit];
     }
 }
 
@@ -176,9 +177,9 @@ Sampler *DualSampler::GetSubSampler(int num, int count) {
         
         // Use the appropriate sampling map
         if (firstPass)
-            return new DualSampler(this, x0, x1, y0, y1, *_samplingMapA, _scramblingA);
+            return new DualSampler(this, x0, x1, y0, y1, _samplingMapA, _scramblingA);
         else
-            return new DualSampler(this, x0, x1, y0, y1, *_samplingMapB, _scramblingB);
+            return new DualSampler(this, x0, x1, y0, y1, _samplingMapB, _scramblingB);
     }
 }
 
@@ -224,7 +225,7 @@ int DualSampler::GetMoreSamplesMap(Sample *samples, RNG &rng) {
         for ( ; _xPos < _xEndSub; _xPos++) {
             // Get requested sample count for current pixel
             int pix = _xPos + _yPos * _xPixelCount;
-            float req = (*_samplingMapA)[pix];
+            float req = _samplingMapA[pix];
 
             // Factor in the half-toning error from the previous pixel
             req -= _sppErr;
@@ -329,7 +330,7 @@ int DualSampler::GetMoreSamplesMapLD(Sample *samples, RNG &rng) {
         for ( ; _xPos < _xEndSub; _xPos++) {
             // Get requested sample count for current pixel
             int pix = _xPos + _yPos * _xPixelCount;
-            float req = (*_samplingMapA)[pix];
+            float req = _samplingMapA[pix];
 
             // Factor in the half-toning error from the previous pixel
             req -= _sppErr;
@@ -547,5 +548,3 @@ void DualSampler::MyLDPixelSampleInterleaved(int xPos, int yPos, float shutterOp
         }
     }
 }
-
-

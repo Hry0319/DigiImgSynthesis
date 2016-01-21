@@ -48,7 +48,11 @@ public:
     void GetSamplingMaps(int spp, int nSamples, float *samplingMapA, float *samplingMapB) const 
 	{
         //_denoiser->UpdatePixelData(pixelsA, pixelsB, subPixelsA, subPixelsB, NLM_DATA_INTER);
+		NLmean->NLFiltering(pixelsA, pixelsB, GetXPixelCount(), GetYPixelCount() );
+
         //_denoiser->GetSamplingMaps(spp, nSamples, samplingMapA, samplingMapB);
+		NLmean->GetSamplingMaps(spp, nSamples, samplingMapA, samplingMapB);
+		
     }
     
     void GetSampleExtent(int *xstart, int *xend, int *ystart, int *yend) const;
@@ -82,10 +86,10 @@ private:
 	BlockedArray<Pixel> *pixelsA, *pixelsB;
     
 	float *filterTable;
-	NLMeanFilter *NLmean;
-	
+	NLMeanFilter *NLmean;	
     // The denoiser used to filter out the noise from the rendering.
     //NlmeansDenoiser *_denoiser;
+
     // Subpixel buffer. Since our sampling is potentially non-uniform, we store
     // samples on a sub-pixel grid using a box filter, and then apply the pixel
     // filter on the sub-pixel grid instead of the actual samples.

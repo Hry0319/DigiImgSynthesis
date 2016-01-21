@@ -38,7 +38,7 @@ public:
         int ystart, int yend, bool firstPass);
     // Constructor for sub-sampler during adaptive phase, uses sampling map
     DualSampler(const DualSampler *parent, int xstart, int xend,
-        int ystart, int yend, ImageBuffer &samplingMap,
+        int ystart, int yend, float *samplingMap,
         NlmeansScramblingInfo *scrambling);
     virtual ~DualSampler();
 

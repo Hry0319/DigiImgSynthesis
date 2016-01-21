@@ -669,8 +669,6 @@ Filter *MakeFilter(const string &name,
         filter = CreateSincFilter(paramSet);
     else if (name == "triangle")
         filter = CreateTriangleFilter(paramSet);
-	else if (name == "NL")
-		filter = CreateNLMeanFilter(paramSet);
 		
     else
         Warning("Filter \"%s\" unknown.", name.c_str());

@@ -58,7 +58,7 @@ DualFilm::DualFilm(int xres, int yres, Filter *filt, const float crop[4],
         Warning("Support for opening image display window not available in this build.");
     }
 	
-	NLmean = (NLMeanFilter*)filter;
+	NLmean = new NLMeanFilter(wnd_rad, ptc_rad, k, 0.45f);
 
     //// Allocate subpixel film image storage
     //subPixelRes = 4;
@@ -172,8 +172,6 @@ void DualFilm::AddSample(const CameraSample &sample, const Spectrum &L, TargetBu
     //AtomicAdd(&subpix._nSamplesBox, 1);
 }
 
-void DualFilm::Splat(const CameraSample &sample, const Spectrum &L){
-}
 
 
 void DualFilm::GetSampleExtent(int *xstart, int *xend,
@@ -248,13 +246,13 @@ void DualFilm::WriteImage(float splatScale) {
     }
 
 	
-	
+	rgb = NLmean->NLFiltering(pixelsA, pixelsB, xPixelCount, yPixelCount);
+
 
     ::WriteImage(filename, &rgb[0], NULL, xPixelCount, yPixelCount, xPixelCount, yPixelCount, 0, 0);
 
 
-	rgb = NLmean->NLFiltering(pixelsA, pixelsB, xPixelCount, yPixelCount);
-
+	
     // Filter out noise from data and store the result
     /*
 	if (!NLmean->IsReady())

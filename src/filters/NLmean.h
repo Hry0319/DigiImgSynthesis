@@ -84,34 +84,19 @@ public:
 			epslon = EPSLON;
 	}
 
+	int nPixs;
+	int _xPixelCount;
+	int	_yPixelCount;
 
     float Evaluate(float x, float y) const;
 
 	float *NLFiltering(BlockedArray<Pixel> *pixelsA, BlockedArray<Pixel> *pixelsB, int xPixelCount, int yPixelCount);
+	float *Cal(BlockedArray<Pixel> *pixels, int xPixelCount, int yPixelCount);
+
+	void UpdateError(float *ImgVar, BlockedArray<Pixel> *_fltSpp, float *ImgErr);
+	void GetSamplingMaps(int spp, int nSamples, float *mapA, float *mapB);
 
 	
-	void NLMeanFilter::InitSummedAreaRGBTable(float *summedArea, unsigned int width, unsigned int height, unsigned int rgb)const;
-
-	float SummedAreaValue(int x,int y,int width,int height, float *RGBSumareaTable, int rgb)const
-        {
-			int x0 = x - r - 1;
-			int y0 = y - r - 1;
-			int x1 = x + r;
-			int y1 = y + r;
-
-			if(x0 < 0) x0 = 0;
-			if(y0 < 0) y0 = 0;
-			if(x1 > width-1) x1 = width-1;
-			if(y1 > height-1) y1 = height-1;
-
-			float upper = RGBSumareaTable[y0 * width * 3 + x1 *3 + rgb];
-			float left  = RGBSumareaTable[y1 * width * 3 + x0 *3 + rgb];
-			float upper_left = RGBSumareaTable[y0 * width * 3 + x0 *3 + rgb];
-			float mine = RGBSumareaTable[y1 * width * 3 + x1 *3 + rgb];
-			
-			return mine - upper - left + upper_left ;
-        }
-
 private:
     // Non-local Mean Filter Private Data
     const float alpha;
@@ -120,12 +105,16 @@ private:
 	const float r;
 	float epslon/* = 1e-10*/;
 
-	float *RGBSumareaTableA;
-	float *RGBSumareaTableB;
+	float *ImgVar_A ;
+	float *ImgVar_B ;
+
+	float *ImgErr_A;
+	float *ImgErr_B;
 
 };
 
 
 NLMeanFilter *CreateNLMeanFilter(const ParamSet &ps);
+
 
 #endif // PBRT_FILTERS_NLMean_H
