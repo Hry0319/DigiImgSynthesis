@@ -59,10 +59,17 @@ float* NLMeanFilter::NLFiltering(BlockedArray<Pixel> *pixelsA, BlockedArray<Pixe
 
 	ImgVar_A = new float[nPix*3];
 	ImgVar_B = new float[nPix*3];
+	ImgErr_A = new float[nPix*3];
+	ImgErr_B = new float[nPix*3];
 
 	 // Compute observed variance
     for (int i = 0; i < nPix*3; i++) {
 		float vv = pow((rgbA[i] - rgbB[i]), 2);
+		if(vv != 0)
+		{
+			std::printf("%f  ///////// \n",vv);
+		}
+
         ImgVar_A[i] = 2.f * vv / (1e-3f + pow(rgbA[i], 2));
         ImgVar_B[i] = 2.f * vv / (1e-3f + pow(rgbB[i], 2));
     }
@@ -91,9 +98,10 @@ void NLMeanFilter::UpdateError(float *ImgVar, BlockedArray<Pixel> *pixels, float
         */
         // The pixel error
         float pixel_error = (ImgVar[pix*3] + ImgVar[pix*3 +1] + ImgVar[pix*3 +2]) / 3.f;
-        
+
         // Set the pixel error info
 		ImgErr[pix] = pixel_error / (*pixels)(pix%_xPixelCount, pix/_xPixelCount)._nSamplesBox;
+
     }
 }
 
@@ -115,7 +123,7 @@ void NLMeanFilter::GetSamplingMaps(int spp, int nSamples, float *mapA, float *ma
 	float sumA = 0.0f;
 	for (int index = 0; index < nPixs; index++ )
 	{
-		sumA += mapA[index] + mapB[index];
+		sumA += mapA[index];
 	}
 
     float nSamplesA = nSamples / 2.f;
@@ -141,7 +149,7 @@ void NLMeanFilter::GetSamplingMaps(int spp, int nSamples, float *mapA, float *ma
 		float distributed = 0.0f;
 		for (int index = 0; index < nPixs; index++ )
 		{
-			distributed += mapA[index] + mapB[index];
+			distributed += mapA[index];
 		}
 
         float scale = (nSamplesA-nPixOver1*lim)/(distributed-nPixOver1*lim);

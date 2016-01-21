@@ -80,8 +80,10 @@ public:
 
     // Non-local Mean Filter Public Methods
     NLMeanFilter(float r, float f, float k, float a)
-        : Filter(r, r), alpha(a), f(f) , k(k), r(r){
+        : Filter(r, r), alpha(a), f(f) , k(k), r(r)
+	{
 			epslon = EPSLON;
+
 	}
 
 	int nPixs;
