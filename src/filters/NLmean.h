@@ -41,23 +41,58 @@
 
 #define EPSLON 1e-10
 
+struct Pixel {
+    Pixel() {
+        _weightSum = 0.f;
+		_nSamplesBox = 0.f;
+		for (int i = 0; i < 3; ++i) 
+		{
+			_Lrgb[i] = 0.f;
+			_LrgbSumBox[i] = 0.f;
+			_LrgbSumSqrBox[i] = 0.f;
+			_varSumBox[i] = 0.f;
+			_varSumSqrBox[i] = 0.f;
+		}
+    }
+    float Lxyz[3];
+    float weightSum;
+    float splatXYZ[3];
+    float pad;
+	// These store the sample values, as well as the cumulative weights, as
+	// defined by the filter.
+	float _Lrgb[3];
+	float _weightSum;
+	// The 'box' data is used to compute the variance of samples falling within
+	// the boundary of a pixel. It is not affected by the reconstruction filter.
+	int _nSamplesBox;
+	float _LrgbSumBox[3];
+	float _LrgbSumSqrBox[3];
+	// Buffer variance
+	float _tmp[3];
+	float _varSumBox[3];
+	float _varSumSqrBox[3];
+};
+//typedef BlockedArray<Pixel> NLPixel;
+
 // NL-Mean Filter Declarations
 class NLMeanFilter : public Filter {
 public:
+
     // Non-local Mean Filter Public Methods
     NLMeanFilter(float r, float f, float k, float a)
         : Filter(r, r), alpha(a), f(f) , k(k), r(r){
 			epslon = EPSLON;
 	}
 
+
     float Evaluate(float x, float y) const;
 
-	float *NLFiltering(float * rgb, int xPixelCount, int yPixelCount);
+	float *NLFiltering(BlockedArray<Pixel> *pixelsA, BlockedArray<Pixel> *pixelsB, int xPixelCount, int yPixelCount);
 
 	
 	void NLMeanFilter::InitSummedAreaRGBTable(float *summedArea, unsigned int width, unsigned int height, unsigned int rgb)const;
 
-	float SummedAreaValue(int x,int y,int width,int height, int rgb)const
+	float SummedAreaValue(int x,int y,int width,int height, float *RGBSumareaTable, int rgb)const
         {
 			int x0 = x - r - 1;
 			int y0 = y - r - 1;
@@ -75,19 +110,6 @@ public:
 			float mine = RGBSumareaTable[y1 * width * 3 + x1 *3 + rgb];
 			
 			return mine - upper - left + upper_left ;
-			
-            /*int x1 = x + width-1;
-            int y1 = y + height-1;
-            if(x1 > AreaWidth)x1 = AreaWidth;
-            if(y1 > AreaHeight)y1 = AreaHeight;
-            if(x1 < 0)x1 = 0;
-            if(y1 < 0)y1 = 0;
-            RGBSpectrum upper_left   = summedArea[x  + AreaWidth*y ];
-            RGBSpectrum upper_right  = summedArea[x1 + AreaWidth*y ];
-            RGBSpectrum button_left  = summedArea[x  + AreaWidth*y1];
-            RGBSpectrum button_right = summedArea[x1 + AreaWidth*y1];*
-
-            return button_right + upper_left - upper_right - button_left;*/
         }
 
 private:
@@ -98,7 +120,8 @@ private:
 	const float r;
 	float epslon/* = 1e-10*/;
 
-	float *RGBSumareaTable;
+	float *RGBSumareaTableA;
+	float *RGBSumareaTableB;
 
 };
 

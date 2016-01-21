@@ -208,6 +208,7 @@
     <ClInclude Include="..\core\timer.h" />
     <ClInclude Include="..\core\transform.h" />
     <ClInclude Include="..\core\volume.h" />
+    <ClInclude Include="..\film\dualfilm.h" />
     <ClInclude Include="..\film\image.h" />
     <ClInclude Include="..\filters\box.h" />
     <ClInclude Include="..\filters\gaussian.h" />
@@ -254,8 +255,10 @@
     <ClInclude Include="..\renderers\metropolis.h" />
     <ClInclude Include="..\renderers\samplerrenderer.h" />
     <ClInclude Include="..\renderers\surfacepoints.h" />
+    <ClInclude Include="..\renderers\twostages.h" />
     <ClInclude Include="..\samplers\adaptive.h" />
     <ClInclude Include="..\samplers\bestcandidate.h" />
+    <ClInclude Include="..\samplers\dualsampler.h" />
     <ClInclude Include="..\samplers\halton.h" />
     <ClInclude Include="..\samplers\lowdiscrepancy.h" />
     <ClInclude Include="..\samplers\random.h" />
@@ -1173,6 +1176,7 @@
     <ClCompile Include="..\core\timer.cpp" />
     <ClCompile Include="..\core\transform.cpp" />
     <ClCompile Include="..\core\volume.cpp" />
+    <ClCompile Include="..\film\dualfilm.cpp" />
     <ClCompile Include="..\film\image.cpp" />
     <ClCompile Include="..\filters\box.cpp" />
     <ClCompile Include="..\filters\gaussian.cpp" />
@@ -1219,8 +1223,10 @@
     <ClCompile Include="..\renderers\metropolis.cpp" />
     <ClCompile Include="..\renderers\samplerrenderer.cpp" />
     <ClCompile Include="..\renderers\surfacepoints.cpp" />
+    <ClCompile Include="..\renderers\twostages.cpp" />
     <ClCompile Include="..\samplers\adaptive.cpp" />
     <ClCompile Include="..\samplers\bestcandidate.cpp" />
+    <ClCompile Include="..\samplers\dualsampler.cpp" />
     <ClCompile Include="..\samplers\halton.cpp" />
     <ClCompile Include="..\samplers\lowdiscrepancy.cpp" />
     <ClCompile Include="..\samplers\random.cpp" />

@@ -51,6 +51,7 @@
 #include "cameras/perspective.h"
 #include "cameras/realistic.h" //Rendering Class 2015 Hw2
 #include "film/image.h"
+#include "film/dualfilm.h"
 #include "filters/box.h"
 #include "filters/gaussian.h"
 #include "filters/mitchell.h"
@@ -95,6 +96,7 @@
 #include "renderers/createprobes.h"
 #include "renderers/metropolis.h"
 #include "renderers/samplerrenderer.h"
+#include "renderers/twostages.h"
 #include "renderers/surfacepoints.h"
 #include "samplers/adaptive.h"
 #include "samplers/bestcandidate.h"
@@ -102,6 +104,7 @@
 #include "samplers/lowdiscrepancy.h"
 #include "samplers/random.h"
 #include "samplers/stratified.h"
+#include "samplers/dualsampler.h"
 #include "shapes/cone.h"
 #include "shapes/cylinder.h"
 #include "shapes/disk.h"
@@ -644,6 +647,8 @@ Sampler *MakeSampler(const string &name,
         sampler = CreateRandomSampler(paramSet, film, camera);
     else if (name == "stratified")
         sampler = CreateStratifiedSampler(paramSet, film, camera);
+    else if (name == "dual")
+        sampler = CreateDualSampler(paramSet, film, camera);
     else
         Warning("Sampler \"%s\" unknown.", name.c_str());
     paramSet.ReportUnused();
@@ -666,6 +671,7 @@ Filter *MakeFilter(const string &name,
         filter = CreateTriangleFilter(paramSet);
 	else if (name == "NL")
 		filter = CreateNLMeanFilter(paramSet);
+		
     else
         Warning("Filter \"%s\" unknown.", name.c_str());
     paramSet.ReportUnused();
@@ -678,6 +684,8 @@ Film *MakeFilm(const string &name,
     Film *film = NULL;
     if (name == "image")
         film = CreateImageFilm(paramSet, filter);
+    else if (name == "dual")
+        film = CreateDualFilm(paramSet, filter);
     else
         Warning("Film \"%s\" unknown.", name.c_str());
     paramSet.ReportUnused();
@@ -1257,7 +1265,7 @@ Renderer *RenderOptions::MakeRenderer() const {
         RendererParams.ReportUnused();
     }
     else {
-        if (RendererName != "sampler")
+        if (RendererName != "sampler" && RendererName != "twostages")
             Warning("Renderer type \"%s\" unknown.  Using \"sampler\".",
                     RendererName.c_str());
         bool visIds = RendererParams.FindOneBool("visualizeobjectids", false);
@@ -1271,8 +1279,12 @@ Renderer *RenderOptions::MakeRenderer() const {
         VolumeIntegrator *volumeIntegrator = MakeVolumeIntegrator(VolIntegratorName,
                                                                   VolIntegratorParams);
         if (!volumeIntegrator) Severe("Unable to create volume integrator.");
-        renderer = new SamplerRenderer(sampler, camera, surfaceIntegrator,
-                                       volumeIntegrator, visIds);
+        if (RendererName != "twostages")
+            renderer = new SamplerRenderer(sampler, camera, surfaceIntegrator,
+                volumeIntegrator, visIds);
+        else
+            renderer = new TwoStagesSamplerRenderer(sampler, camera,
+                surfaceIntegrator, volumeIntegrator, visIds);
         // Warn if no light sources are defined
         if (lights.size() == 0)
             Warning("No light sources defined in scene; "

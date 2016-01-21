@@ -227,15 +227,6 @@ void ImageFilm::WriteImage(float splatScale) {
             ++offset;
         }
     }
-
-	if(filtername == "NL"){
-		NLMeanFilter *NLmean = (NLMeanFilter*)filter;
-		frgb = NLmean->NLFiltering(rgb, xPixelCount, yPixelCount);
-	}
-	else
-	{
-		frgb = rgb;
-	}
 	
     // Write RGB image
     ::WriteImage(filename, frgb, NULL, xPixelCount, yPixelCount,

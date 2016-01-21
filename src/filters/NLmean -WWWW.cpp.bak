@@ -33,17 +33,15 @@
 // filters/gaussian.cpp*
 #include "stdafx.h"
 #include "filters/NLMean.h"
-#include "film/dualfilm.h"
 #include "paramset.h"
 #include "math.h"
-
 
 // NLMean Filter Method Definitions
 float NLMeanFilter::Evaluate(float x, float y) const {
     return 1.f;
 }
 
-float* NLMeanFilter::NLFiltering(BlockedArray<Pixel> *pixelsA, BlockedArray<Pixel> *pixelsB, int xPixelCount, int yPixelCount){
+float* NLMeanFilter::NLFiltering(float * rgb, int xPixelCount, int yPixelCount){
 	
 	int nPix = xPixelCount * yPixelCount;
 
@@ -52,36 +50,24 @@ float* NLMeanFilter::NLFiltering(BlockedArray<Pixel> *pixelsA, BlockedArray<Pixe
 	//int offset;
 	//int xMin, xMax, yMin, yMax;
 
-	//float *rgb = (*pixelsA)( xPixelCount, yPixelCount)._Lrgb;
 	
-	RGBSumareaTableA = new float[nPix*3];
-	RGBSumareaTableB = new float[nPix*3];
-	for (int y = 0; y < yPixelCount; y++)
+	RGBSumareaTable = new float[nPix*3];
+
+	for (int index = 0; index < nPix; index++)
 	{
-		for (int x = 0; x < xPixelCount; x++)
-		{
-			int index = y*xPixelCount + x;
-			RGBSumareaTableA[index*3]		= (*pixelsA)(x, y)._LrgbSumBox[0];
-			RGBSumareaTableA[index*3 + 1]	= (*pixelsA)(x, y)._LrgbSumBox[1];
-			RGBSumareaTableA[index*3 + 2]	= (*pixelsA)(x, y)._LrgbSumBox[2];
-			RGBSumareaTableB[index*3]		= (*pixelsB)(x, y)._LrgbSumBox[0];
-			RGBSumareaTableB[index*3 + 1]	= (*pixelsB)(x, y)._LrgbSumBox[1];
-			RGBSumareaTableB[index*3 + 2]	= (*pixelsB)(x, y)._LrgbSumBox[2];
-		}
+		RGBSumareaTable[index*3]		= rgb[index*3];
+		RGBSumareaTable[index*3 + 1]	= rgb[index*3 + 1];
+		RGBSumareaTable[index*3 + 2]	= rgb[index*3 + 2];
 	}
 
 	//-------- sumareatable ------------------------
-	InitSummedAreaRGBTable(RGBSumareaTableA, xPixelCount, yPixelCount, 0);
-	InitSummedAreaRGBTable(RGBSumareaTableA, xPixelCount, yPixelCount, 1);
-	InitSummedAreaRGBTable(RGBSumareaTableA, xPixelCount, yPixelCount, 2);
-	InitSummedAreaRGBTable(RGBSumareaTableB, xPixelCount, yPixelCount, 0);
-	InitSummedAreaRGBTable(RGBSumareaTableB, xPixelCount, yPixelCount, 1);
-	InitSummedAreaRGBTable(RGBSumareaTableB, xPixelCount, yPixelCount, 2);
+	InitSummedAreaRGBTable(RGBSumareaTable , xPixelCount, yPixelCount, 0);
+	InitSummedAreaRGBTable(RGBSumareaTable , xPixelCount, yPixelCount, 1);
+	InitSummedAreaRGBTable(RGBSumareaTable , xPixelCount, yPixelCount, 2);
 	//----------------------------------------------
 
 	//float *dis = new float[nPix*3];
-	float *meanA = new float[nPix*3];
-	float *meanB = new float[nPix*3];
+	float *mean = new float[nPix*3];
 	float *var  = new float[nPix*3];
 
 	float patchArea = (2*f+1)*(2*f+1);
@@ -94,13 +80,9 @@ float* NLMeanFilter::NLFiltering(BlockedArray<Pixel> *pixelsA, BlockedArray<Pixe
 		{
 			int index = x + y*xPixelCount;
 			
-			//meanA[index*3     ] = SummedAreaValue(x , y, xPixelCount, yPixelCount, RGBSumareaTableA, 0) / patchArea;
-			//meanA[index*3 + 1 ] = SummedAreaValue(x , y, xPixelCount, yPixelCount, RGBSumareaTableA, 1) / patchArea;
-			//meanA[index*3 + 2 ] = SummedAreaValue(x , y, xPixelCount, yPixelCount, RGBSumareaTableA, 2) / patchArea;
-			//
-			//meanB[index*3     ] = SummedAreaValue(x , y, xPixelCount, yPixelCount, RGBSumareaTableB, 0) / patchArea;
-			//meanB[index*3 + 1 ] = SummedAreaValue(x , y, xPixelCount, yPixelCount, RGBSumareaTableB, 1) / patchArea;
-			//meanB[index*3 + 2 ] = SummedAreaValue(x , y, xPixelCount, yPixelCount, RGBSumareaTableB, 2) / patchArea;
+			mean[index*3     ] = SummedAreaValue(x , y, xPixelCount, yPixelCount, 0) / patchArea;
+			mean[index*3 + 1 ] = SummedAreaValue(x , y, xPixelCount, yPixelCount, 1) / patchArea;
+			mean[index*3 + 2 ] = SummedAreaValue(x , y, xPixelCount, yPixelCount, 2) / patchArea;
 
 			var[index*3 ] = 0;
 			var[index*3 + 1] = 0;
@@ -132,6 +114,8 @@ float* NLMeanFilter::NLFiltering(BlockedArray<Pixel> *pixelsA, BlockedArray<Pixe
 	
 	int qx, qy;
 
+	float *w = new float[3*nPix];
+
 	for (int y = 0; y < yPixelCount ; y++)
 	{
 		for (int x = 0; x < xPixelCount; x++)
@@ -153,33 +137,54 @@ float* NLMeanFilter::NLFiltering(BlockedArray<Pixel> *pixelsA, BlockedArray<Pixe
 					qx = x + fx;
 					qy = y + fy;
 					
-					if( (qx) >= 0 && (qy) >= 0 && (qx) < xPixelCount && (qy) < yPixelCount)
+					if((qx) >= 0 && (qy) >= 0 && (qx) < xPixelCount && (qy) < yPixelCount)
 					{
-						dis = 0;
-						//for each patch q
-						for (int py = -r; py <= r ; py++)
+						weight = 0;
+						for(int wy = -r; wy <=r; wy++)
 						{
-							for (int px = -r; px <= r ; px++)
+							for(int wx = -r; wx <=r; wx++)
 							{
-								for(int i = 0; i < 3 ; i++)
-								{				
-									if( ( (x+px) >= 0 && (y+py) >= 0 && (x+px) < xPixelCount && (y+py) < yPixelCount) &&
-										( (qx+px) >= 0 && (qy+py) >= 0 && (qx+px) < xPixelCount && (qy+py) < yPixelCount)  
-									){
-										int indexP = (x+px + (y+py)*xPixelCount)*3 + i;
-										int indexQ = (qx+px + (qy+py)*xPixelCount)*3 + i;
+								int Wx = x + wx;
+								int Wy = y + wy;
+								int Wqx = qx + wx;
+								int Wqy = qy + wy;
+								if( ((Wqx) >= 0 && (Wqy) >= 0 && (Wqx) < xPixelCount && (Wqy) < yPixelCount) &&
+									((Wx) >= 0 && (Wy) >= 0 && (Wx) < xPixelCount && (Wy) < yPixelCount))
+								{
+									dis = 0;
+									//for each patch q
+									for (int py = -r; py <= r ; py++)
+									{
+										for (int px = -r; px <= r ; px++)
+										{
+											for(int i = 0; i < 3 ; i++)
+											{				
+												if( ( (Wx+px) >= 0 && (Wy+py) >= 0 && (Wx+px) < xPixelCount && (Wy+py) < yPixelCount) &&
+													( (Wqx+px) >= 0 && (Wqy+py) >= 0 && (Wqx+px) < xPixelCount && (Wqy+py) < yPixelCount)  
+												){
+													int indexP = (Wx+px + (Wy+py)*xPixelCount)*3 + i;
+													int indexQ = (Wqx+px + (Wqy+py)*xPixelCount)*3 + i;
 
-										int m = min(var[indexP], var[indexQ]);
+													int m = min(var[indexP], var[indexQ]);
 							
-										dis += (pow(rgb[indexP]-rgb[indexQ] , 2) 
-													- alpha*(var[indexP] - m) ) / (epslon+ k*k*(var[indexP] + var[indexQ]));													
+													dis += (pow(rgb[indexP]-rgb[indexQ] , 2) 
+																- alpha*(var[indexP] - m) ) / (epslon+ k*k*(var[indexP] + var[indexQ]));													
+												}
+											}
+										}
 									}
+					
+									dis /= (3*(2*f+1)*(2*f+1));
+									weight += exp(-1* max(0.f, dis));						
+									//totalW += weight;
+
+									//outRGB[index*3 ] += rgb[(qx + qy*xPixelCount)*3 ] * weight;
+									//outRGB[index*3 + 1] += rgb[(qx + qy*xPixelCount)*3 + 1] * weight;
+									//outRGB[index*3 + 2] += rgb[(qx + qy*xPixelCount)*3 + 2] * weight;
 								}
 							}
 						}
-					
-						dis /= (3*(2*f+1)*(2*f+1));
-						weight = exp(-1* max(0.f, dis));
+						weight = weight / ((2*f+1)*(2*f+1));
 						totalW += weight;
 
 						outRGB[index*3 ] += rgb[(qx + qy*xPixelCount)*3 ] * weight;
@@ -194,6 +199,7 @@ float* NLMeanFilter::NLFiltering(BlockedArray<Pixel> *pixelsA, BlockedArray<Pixe
 
 		}
 	}
+
 
 	return outRGB ;
 }

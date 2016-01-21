@@ -88,9 +88,6 @@
     <Filter Include="Source Files\film">
       <UniqueIdentifier>{a2878cce-2350-46a4-a4ba-cd79706001b4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\filters">
-      <UniqueIdentifier>{0f026584-4a57-4215-8dfa-76bfd32a497d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\integrators">
       <UniqueIdentifier>{71b4955c-2ed7-44b3-83d2-17647191982f}</UniqueIdentifier>
     </Filter>
@@ -120,6 +117,9 @@
     </Filter>
     <Filter Include="Source Files\3rdparty\tiff-3.9.4">
       <UniqueIdentifier>{cb4e6ae4-62ac-4eb3-afbd-99ce385b8ee3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\filters">
+      <UniqueIdentifier>{0f026584-4a57-4215-8dfa-76bfd32a497d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -924,6 +924,15 @@
     <ClInclude Include="..\filters\NLmean.h">
       <Filter>Header Files\filters</Filter>
     </ClInclude>
+    <ClInclude Include="..\renderers\twostages.h">
+      <Filter>Header Files\renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\film\dualfilm.h">
+      <Filter>Header Files\film</Filter>
+    </ClInclude>
+    <ClInclude Include="..\samplers\dualsampler.h">
+      <Filter>Header Files\samplers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\3rdparty\ilmbase-1.0.2\half.cpp">
@@ -1702,6 +1711,15 @@
     </ClCompile>
     <ClCompile Include="..\lights\medianCutEnvironmentLight.cpp">
       <Filter>Source Files\lights</Filter>
+    </ClCompile>
+    <ClCompile Include="..\renderers\twostages.cpp">
+      <Filter>Source Files\renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\film\dualfilm.cpp">
+      <Filter>Source Files\film</Filter>
+    </ClCompile>
+    <ClCompile Include="..\samplers\dualsampler.cpp">
+      <Filter>Source Files\samplers</Filter>
     </ClCompile>
     <ClCompile Include="..\filters\NLmean.cpp">
       <Filter>Source Files\filters</Filter>
