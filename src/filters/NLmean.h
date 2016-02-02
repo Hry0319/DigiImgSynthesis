@@ -44,33 +44,33 @@
 struct Pixel {
     Pixel() {
         _weightSum = 0.f;
-		_nSamplesBox = 0.f;
-		for (int i = 0; i < 3; ++i) 
-		{
-			_Lrgb[i] = 0.f;
-			_LrgbSumBox[i] = 0.f;
-			_LrgbSumSqrBox[i] = 0.f;
-			_varSumBox[i] = 0.f;
-			_varSumSqrBox[i] = 0.f;
-		}
+        _nSamplesBox = 0.f;
+        for (int i = 0; i < 3; ++i) 
+        {
+            _Lrgb[i] = 0.f;
+            _LrgbSumBox[i] = 0.f;
+            _LrgbSumSqrBox[i] = 0.f;
+            _varSumBox[i] = 0.f;
+            _varSumSqrBox[i] = 0.f;
+        }
     }
     float Lxyz[3];
     float weightSum;
     float splatXYZ[3];
     float pad;
-	// These store the sample values, as well as the cumulative weights, as
-	// defined by the filter.
-	float _Lrgb[3];
-	float _weightSum;
-	// The 'box' data is used to compute the variance of samples falling within
-	// the boundary of a pixel. It is not affected by the reconstruction filter.
-	int _nSamplesBox;
-	float _LrgbSumBox[3];
-	float _LrgbSumSqrBox[3];
-	// Buffer variance
-	float _tmp[3];
-	float _varSumBox[3];
-	float _varSumSqrBox[3];
+    // These store the sample values, as well as the cumulative weights, as
+    // defined by the filter.
+    float _Lrgb[3];
+    float _weightSum;
+    // The 'box' data is used to compute the variance of samples falling within
+    // the boundary of a pixel. It is not affected by the reconstruction filter.
+    int _nSamplesBox;
+    float _LrgbSumBox[3];
+    float _LrgbSumSqrBox[3];
+    // Buffer variance
+    float _tmp[3];
+    float _varSumBox[3];
+    float _varSumSqrBox[3];
 };
 //typedef BlockedArray<Pixel> NLPixel;
 
@@ -81,37 +81,37 @@ public:
     // Non-local Mean Filter Public Methods
     NLMeanFilter(float r, float f, float k, float a)
         : Filter(r, r), alpha(a), f(f) , k(k), r(r)
-	{
-			epslon = EPSLON;
+    {
+            epslon = EPSLON;
 
-	}
+    }
 
-	int nPixs;
-	int _xPixelCount;
-	int	_yPixelCount;
+    int nPixs;
+    int _xPixelCount;
+    int	_yPixelCount;
 
     float Evaluate(float x, float y) const;
 
-	float *NLFiltering(BlockedArray<Pixel> *pixelsA, BlockedArray<Pixel> *pixelsB, int xPixelCount, int yPixelCount);
-	float *Cal(BlockedArray<Pixel> *pixels, int xPixelCount, int yPixelCount);
+    float *NLFiltering(BlockedArray<Pixel> *pixelsA, BlockedArray<Pixel> *pixelsB, int xPixelCount, int yPixelCount);
+    float *Cal(BlockedArray<Pixel> *pixels, int xPixelCount, int yPixelCount);
 
-	void UpdateError(float *ImgVar, BlockedArray<Pixel> *_fltSpp, float *ImgErr);
-	void GetSamplingMaps(int spp, int nSamples, float *mapA, float *mapB);
+    void UpdateError(float *ImgVar, BlockedArray<Pixel> *_fltSpp, float *ImgErr);
+    void GetSamplingMaps(int spp, int nSamples, float *mapA, float *mapB);
 
-	
+    
 private:
     // Non-local Mean Filter Private Data
     const float alpha;
     const float f;
-	const float k;
-	const float r;
-	float epslon/* = 1e-10*/;
+    const float k;
+    const float r;
+    float epslon/* = 1e-10*/;
 
-	float *ImgVar_A ;
-	float *ImgVar_B ;
+    float *ImgVar_A ;
+    float *ImgVar_B ;
 
-	float *ImgErr_A;
-	float *ImgErr_B;
+    float *ImgErr_A;
+    float *ImgErr_B;
 
 };
 

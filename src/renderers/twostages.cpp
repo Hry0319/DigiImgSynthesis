@@ -60,8 +60,8 @@ void TwoStagesSamplerRendererTask::Run() {
         PBRT_FINISHED_RENDERTASK(taskNum);
         return;
     }
-    
-    // FIXME PLEASE. Ugly hack.
+
+    //
     DualFilm *dualfilm = dynamic_cast<DualFilm*> (camera->film);
     bool singleBuffered = (dualfilm == NULL);
     // Declare local variables used for rendering loop
@@ -190,7 +190,9 @@ TwoStagesSamplerRenderer::~TwoStagesSamplerRenderer() {
     delete volumeIntegrator;
 }
 
-
+//
+// call by api.c => pbrtWorldEnd()
+//
 void TwoStagesSamplerRenderer::Render(const Scene *scene) {
     PBRT_FINISHED_PARSING();
     // Allow integrators to do preprocessing for the scene
@@ -206,7 +208,7 @@ void TwoStagesSamplerRenderer::Render(const Scene *scene) {
     // Create and launch _TwoStagesSamplerRendererTask_s for rendering image
 
     DualSampler *dualSampler = dynamic_cast<DualSampler *> (sampler);
-    
+
     if (dualSampler != NULL) {
         // Initialization phase using uniform sampling
         // Compute number of _TwoStagesSamplerRendererTask_s to create for rendering
@@ -218,8 +220,7 @@ void TwoStagesSamplerRenderer::Render(const Scene *scene) {
         vector<Task *> renderTasks;
         for (int i = 0; i < nTasks; ++i)
             renderTasks.push_back(new TwoStagesSamplerRendererTask(scene, this,
-                camera, reporter, sampler, sample, visualizeObjectIds,
-                nTasks-1-i, nTasks, true));
+                camera, reporter, sampler, sample, visualizeObjectIds, nTasks-1-i, nTasks, true));
         EnqueueTasks(renderTasks);
         WaitForAllTasks();
         for (uint32_t i = 0; i < renderTasks.size(); ++i)
@@ -228,7 +229,7 @@ void TwoStagesSamplerRenderer::Render(const Scene *scene) {
         if (dualSampler->PixelsToSampleTotal() == 0)
             dualSampler->Finalize();
         reporter.Done();
-        
+
         // Adaptive phase. If the there is no pixels left to sample, the user
         // requested uniform sampling and we skip the adaptive phase.
         if (dualSampler->PixelsToSampleTotal() > 0) {
@@ -243,17 +244,17 @@ void TwoStagesSamplerRenderer::Render(const Scene *scene) {
             ProgressReporter reporterAdapt(nTasksTotal, "Adaptive Rendering");
             for (int iter = 0; iter < nIterations; iter++) {
                 dualSampler->GetSamplingMaps(nPixelsPerIteration);
-                
+
                 // Generate tasks
                 for (int i = 0; i < nTasks; ++i)
                     renderTasks.push_back(new TwoStagesSamplerRendererTask(
                         scene, this, camera, reporterAdapt, sampler, sample,
                         visualizeObjectIds, nTasks-1-i, nTasks, true));
-                
+
                 // Do the work
                 EnqueueTasks(renderTasks);
                 WaitForAllTasks();
-                
+
                 // Clean up
                 for (uint32_t i = 0; i < renderTasks.size(); ++i)
                     delete renderTasks[i];

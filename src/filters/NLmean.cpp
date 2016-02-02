@@ -45,7 +45,7 @@ float NLMeanFilter::Evaluate(float x, float y) const {
 }
 
 float* NLMeanFilter::NLFiltering(BlockedArray<Pixel> *pixelsA, BlockedArray<Pixel> *pixelsB, int xPixelCount, int yPixelCount){
-	
+
 	int nPix = xPixelCount * yPixelCount;
 	this->nPixs = nPix;
 	this->_xPixelCount = xPixelCount;
@@ -73,7 +73,7 @@ float* NLMeanFilter::NLFiltering(BlockedArray<Pixel> *pixelsA, BlockedArray<Pixe
         ImgVar_A[i] = 2.f * vv / (1e-3f + pow(rgbA[i], 2));
         ImgVar_B[i] = 2.f * vv / (1e-3f + pow(rgbB[i], 2));
     }
-    
+
     // Update the pixel costs
 	UpdateError(ImgVar_A, pixelsA, ImgErr_A);
 	UpdateError(ImgVar_B, pixelsB, ImgErr_B);
@@ -92,7 +92,7 @@ float* NLMeanFilter::NLFiltering(BlockedArray<Pixel> *pixelsA, BlockedArray<Pixe
 
 
 void NLMeanFilter::UpdateError(float *ImgVar, BlockedArray<Pixel> *pixels, float *ImgErr){
-	
+
 	for (int pix = 0; pix < nPixs; pix++) {
         /*fltErr[pix]._pix = pix;
         */
@@ -107,17 +107,17 @@ void NLMeanFilter::UpdateError(float *ImgVar, BlockedArray<Pixel> *pixels, float
 
 void NLMeanFilter::GetSamplingMaps(int spp, int nSamples, float *mapA, float *mapB) {
     // Initialize the sampling maps using the pixel costs
-    //mapA.resize(_nPix); 
+    //mapA.resize(_nPix);
 	//mapB.resize(_nPix);
 
     for (int pix = 0; pix < nPixs; pix++) {
         mapA[pix] = ImgErr_A[pix] + ImgErr_B[pix];
     }
-    
+
     // Blur the maps a little
     //Gauss2D gauss(.8f, KERNEL_NORM_UNIT);
     //gauss.Apply(_xPixelCount, _yPixelCount, mapA, _tmpMap, mapA);
-    
+
     // Normalize them to sum up to nSamples/2 each
     //float sumA = accumulate(mapA.begin(), mapA.end(), 0.f);
 	float sumA = 0.0f;
@@ -130,7 +130,7 @@ void NLMeanFilter::GetSamplingMaps(int spp, int nSamples, float *mapA, float *ma
     for (int pix = 0; pix < nPixs; pix++) {
         mapA[pix] *= nSamplesA / sumA;
     }
-    
+
     // Clamp the map to "lim" samples per pixel max. "lim" is set to spp-1, so
     // that, even with error propagation, no more than spp can be picked
     int nPixOver1, nPixOver2;
@@ -159,12 +159,12 @@ void NLMeanFilter::GetSamplingMaps(int spp, int nSamples, float *mapA, float *ma
         for (int pix = 0; pix < nPixs; pix++) {
             if (mapA[pix] < lim)
                 mapA[pix] *= scale;
-            
+
             if (mapA[pix] > lim)
                 nPixOver2 += 1;
         }
     } while(nPixOver2 > 0);
-    
+
     //copy(mapA.begin(), mapA.end(), mapB.begin());
     /*if (PbrtOptions.verbose) {
         DumpMap(mapA, "map", DUMP_ITERATION);
@@ -189,7 +189,7 @@ float* NLMeanFilter::Cal(BlockedArray<Pixel> *pixels, int xPixelCount, int yPixe
 		for (int x = 0; x < xPixelCount; x++)
 		{
 			index = y*xPixelCount + x;
-			
+
 			n = (*pixels)(x, y)._nSamplesBox;
 			mean[0] = (*pixels)(x, y)._LrgbSumBox[0] / n;
 			mean[1] = (*pixels)(x, y)._LrgbSumBox[1] / n;
@@ -206,10 +206,10 @@ float* NLMeanFilter::Cal(BlockedArray<Pixel> *pixels, int xPixelCount, int yPixe
 	//float *dis = new float[nPix*3];
 	/*float *meanA = new float[nPix*3];
 	float *meanB = new float[nPix*3];
-	
+
 
 	float patchArea = (2*f+1)*(2*f+1);*/
-	
+
 
 	////----------- calculate Var[p] --------------------//
 	//for (int y = 0; y < yPixelCount ; y++)
@@ -233,30 +233,30 @@ float* NLMeanFilter::Cal(BlockedArray<Pixel> *pixels, int xPixelCount, int yPixe
 	//		var[index*3 + 1] = 0;
 	//		var[index*3 + 2] = 0;
 
-	//		
+	//
 	//		for (int py = -r; py <= r ; py++)
 	//		{
 	//			for (int px = -r; px <= r ; px++)
-	//			{ 
+	//			{
 	//				if( (x+px) >= 0 && (y+py) >= 0 && (x+px) < xPixelCount && (y+py) < yPixelCount)
 	//				{
 	//					var[index*3     ] += rgb[(x+px + (y+py)*xPixelCount)*3    ] - mean[index*3];
 	//					var[index*3 + 1 ] += rgb[(x+px + (y+py)*xPixelCount)*3 + 1] - mean[index*3+1];
 	//					var[index*3 + 2 ] += rgb[(x+px + (y+py)*xPixelCount)*3 + 2] - mean[index*3+2];
-	//				}					
+	//				}
 	//			}
 	//		}
 	//		var[index*3     ] /= patchArea;
 	//		var[index*3 + 1 ] /= patchArea;
 	//		var[index*3 + 2 ] /= patchArea;
-	//		
-	//		
+	//
+	//
 	//	}
 	//}
 
 	float weight, totalW;
 	float dis;
-	
+
 	int qx, qy;
 
 	for (int y = 0; y < yPixelCount ; y++)
@@ -264,11 +264,11 @@ float* NLMeanFilter::Cal(BlockedArray<Pixel> *pixels, int xPixelCount, int yPixe
 		for (int x = 0; x < xPixelCount; x++)
 		{
 			int index = x + y*xPixelCount;
-			
+
 			// filter at p
 			totalW = 0;
 			//outRGB = {};
-			
+
 			outRGB[index*3    ] = 0;
 			outRGB[index*3 + 1] = 0;
 			outRGB[index*3 + 2] = 0;
@@ -279,7 +279,7 @@ float* NLMeanFilter::Cal(BlockedArray<Pixel> *pixels, int xPixelCount, int yPixe
 				{
 					qx = x + fx;
 					qy = y + fy;
-					
+
 					if( (qx) >= 0 && (qy) >= 0 && (qx) < xPixelCount && (qy) < yPixelCount)
 					{
 						dis = 0;
@@ -289,22 +289,22 @@ float* NLMeanFilter::Cal(BlockedArray<Pixel> *pixels, int xPixelCount, int yPixe
 							for (int px = -r; px <= r ; px++)
 							{
 								for(int i = 0; i < 3 ; i++)
-								{				
+								{
 									if( ( (x+px) >= 0 && (y+py) >= 0 && (x+px) < xPixelCount && (y+py) < yPixelCount) &&
-										( (qx+px) >= 0 && (qy+py) >= 0 && (qx+px) < xPixelCount && (qy+py) < yPixelCount)  
+										( (qx+px) >= 0 && (qy+py) >= 0 && (qx+px) < xPixelCount && (qy+py) < yPixelCount)
 									){
 										int indexP = (x+px + (y+py)*xPixelCount)*3 + i;
 										int indexQ = (qx+px + (qy+py)*xPixelCount)*3 + i;
 
 										int m = min(var[indexP], var[indexQ]);
-							
-										dis += (pow((*pixels)(x+px, y+py)._Lrgb[i] - (*pixels)(qx+px, qy+py)._Lrgb[i] , 2) 
-													- alpha*(var[indexP] - m) ) / (epslon+ k*k*(var[indexP] + var[indexQ]));													
+
+										dis += (pow((*pixels)(x+px, y+py)._Lrgb[i] - (*pixels)(qx+px, qy+py)._Lrgb[i] , 2)
+													- alpha*(var[indexP] - m) ) / (epslon+ k*k*(var[indexP] + var[indexQ]));
 									}
 								}
 							}
 						}
-					
+
 						dis /= (3*(2*f+1)*(2*f+1));
 						weight = exp(-1* max(0.f, dis));
 						totalW += weight;
@@ -315,9 +315,9 @@ float* NLMeanFilter::Cal(BlockedArray<Pixel> *pixels, int xPixelCount, int yPixe
 					}
 				}
 			}
-			outRGB[index*3    ] /= totalW ; 
-			outRGB[index*3 + 1] /= totalW ; 
-			outRGB[index*3 + 2] /= totalW ; 
+			outRGB[index*3    ] /= totalW ;
+			outRGB[index*3 + 1] /= totalW ;
+			outRGB[index*3 + 2] /= totalW ;
 
 		}
 	}

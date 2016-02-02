@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   DualSampler.h
  * Author: rousselle
  *
@@ -43,12 +43,9 @@ public:
     virtual ~DualSampler();
 
     Sampler *GetSubSampler(int num, int count);
+
     int GetMoreSamples(Sample *sample, RNG &rng) {
-#ifdef LD_SAMPLING
-        return GetMoreSamplesMapLD(sample, rng);
-#else
         return GetMoreSamplesMap(sample, rng);
-#endif
     }
 
     int MaximumSampleCount() {
@@ -68,17 +65,17 @@ public:
         _film->GetSamplingMaps(samplesPerPixel, nPixels*samplesPerPixel, _samplingMapA, _samplingMapB);
         _pixelsToSampleTotal -= nPixels;
     }
-    
+
     void Finalize() const {
         _film->Finalize();
     }
-    
+
 private:
     bool _isMainSampler;
 
     // Film attributes
     int _xPixelCount, _yPixelCount;
-    
+
     // DualSampler private attributes
     int _nIterations;
     const DualFilm *_film;
@@ -127,7 +124,7 @@ private:
 
     int GetMoreSamplesMap(Sample *sample, RNG &rng);
     int GetMoreSamplesMapLD(Sample *sample, RNG &rng);
-    
+
     float *_samplesBuf;
     void MyLDPixelSample(int xPos, int yPos, float shutterOpen,
         float shutterClose, int nPixelSamples, Sample *samples, RNG &rng,

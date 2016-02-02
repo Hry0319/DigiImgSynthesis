@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   dualfilm.h
  * Author: rousselle
  *
@@ -34,7 +34,7 @@ public:
         delete[] filterTable;
         //delete _denoiser;
     }
-    
+
     // Only support the AddSample with explicit target assignment
     void Splat(const CameraSample &sample, const Spectrum &L) {
         Error("DualFilm::Splat: Not supported!");
@@ -44,17 +44,16 @@ public:
         Error("DualFilm::AddSample: No target buffer specified!");
     }
     void AddSample(const CameraSample &sample, const Spectrum &L, TargetBuffer target);
-    
-    void GetSamplingMaps(int spp, int nSamples, float *samplingMapA, float *samplingMapB) const 
-	{
+
+    void GetSamplingMaps(int spp, int nSamples, float *samplingMapA, float *samplingMapB) const
+    {
         //_denoiser->UpdatePixelData(pixelsA, pixelsB, subPixelsA, subPixelsB, NLM_DATA_INTER);
-		NLmean->NLFiltering(pixelsA, pixelsB, GetXPixelCount(), GetYPixelCount() );
+		    NLmean->NLFiltering(pixelsA, pixelsB, GetXPixelCount(), GetYPixelCount() );
 
         //_denoiser->GetSamplingMaps(spp, nSamples, samplingMapA, samplingMapB);
-		NLmean->GetSamplingMaps(spp, nSamples, samplingMapA, samplingMapB);
-		
+		    NLmean->GetSamplingMaps(spp, nSamples, samplingMapA, samplingMapB);
     }
-    
+
     void GetSampleExtent(int *xstart, int *xend, int *ystart, int *yend) const;
     void GetPixelExtent(int *xstart, int *xend, int *ystart, int *yend) const;
     void WriteImage(float splatScale);
@@ -62,7 +61,7 @@ public:
 
     int GetXPixelCount() const { return xPixelCount; }
     int GetYPixelCount() const { return yPixelCount; }
-    
+
     void Finalize() const {
         //_denoiser->UpdatePixelData(pixelsA, pixelsB, subPixelsA, subPixelsB, NLM_DATA_FINAL);
     }
@@ -81,12 +80,12 @@ private:
     int xPixelStart, yPixelStart, xPixelCount, yPixelCount;
     // Actual film buffer. This DualFilm class holds two buffers. Samples are
     // stored in either buffer according to the AddSample 'target' value.
-    
+
 	//vector<NlmeansPixel> pixelsA,   pixelsB;
 	BlockedArray<Pixel> *pixelsA, *pixelsB;
-    
+
 	float *filterTable;
-	NLMeanFilter *NLmean;	
+	NLMeanFilter *NLmean;
     // The denoiser used to filter out the noise from the rendering.
     //NlmeansDenoiser *_denoiser;
 
